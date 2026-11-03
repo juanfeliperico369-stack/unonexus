@@ -12,3 +12,14 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Hallazgo: el Clásico es de mucha suerte (3 cartas, jugada obligatoria): azar 29.7 % vs Normal 32.0 % vs Difícil 32.1 % de partidas ganadas (3 jugadores). Es propio del diseño.
 - Probado: `node tests/simular.js 1500 11` → 1500 juegos, 13203 partidas, 209 014 acciones, 31 079 acciones inválidas rechazadas, 0 errores.
 - Falta: arte, interfaz, sonido, LAN, pruebas de interfaz.
+
+## 2026-11-03 · Etapas 2–4: arte, interfaz, sonido y LAN
+- `src/arte.js`: símbolos y cartas SVG desde los bocetos (frente #3D3939 con trazos de color + subrayado negro; 3 reversos baja/media/alta; logo).
+- `src/estilo.css`: estética revista (crema, petróleo, rojo, mostaza, tiras de película, máquina de escribir) + mesa oscura con semitono.
+- `src/ui.js`: Inicio, Nueva partida (modos, asientos humano/bot, dirección, castigo Caos, mesa limpia), Mesa, Fin de partida, Campeón, Reglas, Ajustes, LAN. Pasa-el-celular para varios humanos. Guardado/continuar. Tutorial al primer juego. Bot de pruebas interno.
+- `src/sonido.js`: sonidos sintetizados (WebAudio) + vibración.
+- `src/qr.js`: QR propio (validado con un decodificador externo: 12/12 tamaños) + lector con cámara (BarcodeDetector).
+- `src/red.js`: LAN WebRTC sin servidor, código comprimido (~530 caracteres) por QR o copiar/pegar; anfitrión autoritativo; aviso "chao" al cerrar; si un invitado se va, lo reemplaza un bot.
+- `tools/build.js` genera `index.html` (~210 KB, un solo archivo). `package.json` con scripts.
+- Probado: `tests/ui.js` (360x740: juego clásico completo hasta campeón, Combos con 2 humanos, Solitario, Familiar, continuar, pantallas sin desbordamiento, bot interno 120 juegos, 0 errores de consola). `tests/lan.js` (2 navegadores conectados por código, juego completo sincronizado, desconexión → bot). OK.
+- Falta: probar en celulares reales (cámara/QR y mDNS de WebRTC varían por red), empaquetado Capacitor.

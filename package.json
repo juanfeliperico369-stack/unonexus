@@ -1,0 +1,13 @@
+{
+  "name": "nexus-caos",
+  "version": "1.0.0",
+  "private": true,
+  "description": "NEXUS CAOS: juego de cartas elementales offline en un solo HTML, con modo LAN",
+  "scripts": {
+    "build": "node tools/build.js",
+    "test": "node tools/build.js && node tests/simular.js 400 1 && node tests/ui.js && node tests/lan.js",
+    "test:reglas": "node tests/simular.js 1500 1",
+    "test:ui": "node tests/ui.js",
+    "test:lan": "node tests/lan.js"
+  }
+}

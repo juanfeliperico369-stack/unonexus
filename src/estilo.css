@@ -1,0 +1,154 @@
+/* NEXUS CAOS — estilos. Paleta: documento (cartas) + revista "EVOLUCIÓN MUSICAL" (menús). */
+:root{
+  --papel:#efe9d6;--papel2:#e3dbc2;--tinta:#1c1a17;--gris:#5d574c;
+  --petroleo:#164a64;--petroleo2:#0e3346;--rojo:#c42222;--mostaza:#c9a23a;--mostaza2:#e8c96a;
+  --fuego:#C42222;--agua:#257CA2;--tierra:#308936;--aire:#A7B7BB;--carbon:#3D3939;--negro:#000;
+  --plata:#C0C0C0;--oro:#BFAF5B;
+  --fd:"Titulos","Arial Narrow",Impact,sans-serif;--fb:"Cuerpo",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+  --fm:"Courier New",ui-monospace,Menlo,monospace;--fs:Georgia,"Times New Roman",serif;
+  --cw:min(27vw,128px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--papel);color:var(--tinta);font:16px/1.4 var(--fb);overscroll-behavior:none}
+body{overflow-x:hidden;-webkit-user-select:none;user-select:none}
+button{font:inherit;color:inherit;cursor:pointer}
+input,select{font:inherit}
+#app{min-height:100dvh}
+.quieto *,.quieto *::before,.quieto *::after{animation:none!important;transition:none!important}
+.oculto{display:none!important}
+/* ---------- tipografía de revista ---------- */
+.fd{font-family:var(--fd);font-weight:700;letter-spacing:.01em}
+.maq{font-family:var(--fm);text-transform:uppercase;letter-spacing:.12em;font-size:.74rem}
+.ital{font:italic 1.05rem/1.3 var(--fs)}
+.esp{letter-spacing:.42em}
+.rojo{color:var(--rojo)}.pet{color:var(--petroleo)}.mos{color:var(--mostaza)}
+/* ---------- páginas ---------- */
+.pag{min-height:100dvh;max-width:760px;margin:0 auto;padding:0 0 calc(24px + env(safe-area-inset-bottom));position:relative}
+.franja{display:flex;justify-content:space-between;align-items:stretch;background:var(--petroleo);color:var(--papel);padding-top:env(safe-area-inset-top)}
+.franja span{font-family:var(--fm);font-size:.7rem;letter-spacing:.3em;text-transform:uppercase;padding:9px 14px}
+.franja .der{background:var(--papel2);color:var(--petroleo)}
+.cuerpo{padding:14px 16px}
+.portada h1{font-family:var(--fd);font-size:clamp(3.4rem,19vw,7.2rem);line-height:.8;margin:6px 0 0;color:var(--petroleo);letter-spacing:-.01em}
+.portada h1 b{display:block;color:var(--rojo)}
+.portada .logo{width:min(46vw,210px);height:auto;display:block;margin:-8px 0 0 auto;filter:drop-shadow(4px 5px 0 rgba(0,0,0,.18))}
+.cabeza{display:flex;gap:12px;align-items:flex-end;justify-content:space-between}
+.lema{font-family:var(--fd);color:var(--petroleo);font-size:1.5rem;line-height:.95;margin:10px 0 4px}
+.pagnum{position:absolute;right:14px;bottom:calc(8px + env(safe-area-inset-bottom));font-family:var(--fm);font-size:.7rem;letter-spacing:.2em;color:var(--gris)}
+h2.tit{font-family:var(--fd);font-size:2.4rem;line-height:.9;margin:8px 0;color:var(--petroleo)}
+h3.tit{font-family:var(--fd);font-size:1.35rem;margin:16px 0 6px;color:var(--rojo);letter-spacing:.02em}
+.regla{border-top:3px solid var(--tinta);margin:12px 0}
+.pelicula{background:#000;color:var(--mostaza2);padding:18px 14px;position:relative;font-family:var(--fm);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;line-height:1.45}
+.pelicula::before,.pelicula::after{content:"";position:absolute;left:6px;right:6px;height:7px;background:repeating-linear-gradient(90deg,var(--papel) 0 9px,transparent 9px 19px);opacity:.9}
+.pelicula::before{top:4px}.pelicula::after{bottom:4px}
+.chispa::after{content:" ✦";color:var(--mostaza)}
+/* ---------- botones ---------- */
+.btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:54px;padding:10px 16px;margin:9px 0;border:2.5px solid var(--tinta);background:var(--papel);color:var(--tinta);font-family:var(--fd);font-size:1.35rem;letter-spacing:.03em;text-align:left;box-shadow:5px 5px 0 var(--tinta);transition:transform .08s,box-shadow .08s}
+.btn small{font:600 .68rem var(--fm);letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--tinta)}
+.btn.rj{background:var(--rojo);color:#fff}.btn.pt{background:var(--petroleo);color:var(--papel)}.btn.ms{background:var(--mostaza)}.btn.ng{background:#000;color:var(--papel)}
+.btn:disabled{opacity:.45;box-shadow:none}
+.fila-btn{display:flex;gap:10px}.fila-btn .btn{flex:1}
+.chip{display:inline-flex;align-items:center;gap:6px;min-height:44px;padding:8px 14px;margin:4px 6px 4px 0;border:2px solid var(--tinta);background:var(--papel);font:700 .8rem var(--fm);letter-spacing:.08em;text-transform:uppercase}
+.chip.on{background:var(--tinta);color:var(--papel)}
+.chip .sim{width:20px;height:20px}
+.campo{display:block;margin:10px 0 4px;font:700 .72rem var(--fm);letter-spacing:.16em;text-transform:uppercase;color:var(--gris)}
+.asiento{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center;padding:8px 0;border-bottom:1.5px dashed var(--gris)}
+.asiento input{width:100%;min-width:0;min-height:44px;padding:8px 10px;border:2px solid var(--tinta);background:#fffdf6;color:var(--tinta)}
+.asiento select{min-height:44px;border:2px solid var(--tinta);background:var(--papel);padding:0 6px}
+.mini-btn{min-width:44px;min-height:44px;border:2px solid var(--tinta);background:var(--papel);font:700 .9rem var(--fm)}
+.nota{font:italic .92rem/1.35 var(--fs);color:var(--gris);margin:6px 0}
+.caja{border:2.5px solid var(--tinta);padding:10px 12px;margin:10px 0;background:#f7f2e3}
+.caja.roja{border-color:var(--rojo)}
+label.tg{display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:48px;border-bottom:1.5px dashed var(--gris);font-weight:600}
+label.tg input{width:24px;height:24px;accent-color:var(--rojo)}
+/* tabla quién vence a quién */
+.vence{display:grid;grid-template-columns:1fr;gap:8px}
+.vence>div{display:flex;align-items:center;gap:8px;background:var(--carbon);color:var(--papel);padding:8px 10px;border-left:6px solid var(--c)}
+.vence .sim{width:40px;height:40px;flex:none}.vence .mini-s{width:26px;height:26px}
+.vence b{font-family:var(--fd);font-size:1.15rem;min-width:62px;color:var(--c)}
+.vence span{font:.72rem var(--fm);letter-spacing:.06em;text-transform:uppercase;opacity:.85}
+/* ---------- mesa ---------- */
+.mesa{height:100dvh;display:flex;flex-direction:column;color:var(--papel);overflow:hidden;
+  background:radial-gradient(rgba(255,255,255,.045) 1px,transparent 1.6px) 0 0/13px 13px,radial-gradient(120% 80% at 50% 45%,#1e3a4a 0%,#0f1f29 55%,#07090b 100%)}
+.msup{display:flex;align-items:center;gap:8px;background:var(--mostaza);color:#111;padding:calc(4px + env(safe-area-inset-top)) 8px 4px;font:700 .72rem var(--fm);letter-spacing:.12em;text-transform:uppercase}
+.msup .t{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.msup button{min-width:44px;min-height:40px;border:2px solid #111;background:var(--papel);font:700 1rem var(--fm)}
+.rivales{display:flex;gap:7px;overflow-x:auto;padding:8px;scrollbar-width:none;flex:none}
+.rivales::-webkit-scrollbar{display:none}
+.rival{flex:none;min-width:78px;max-width:96px;padding:6px 6px 5px;background:rgba(0,0,0,.38);border:1.5px solid rgba(239,233,214,.18);border-radius:10px;text-align:center;position:relative}
+.rival .nm{font:700 .68rem var(--fm);letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rival .pt{font-family:var(--fd);font-size:1.05rem;line-height:1}
+.rival .pt.neg{color:#ff8a7a}
+.rival .abanico{height:40px;display:flex;justify-content:center;align-items:center}
+.rival .abanico .carta-svg{width:24px;height:34px;margin:0 -7px;filter:drop-shadow(0 1px 2px #000)}
+.rival .n{position:absolute;top:4px;right:5px;background:var(--rojo);color:#fff;border-radius:9px;min-width:18px;height:18px;font:700 .7rem/18px var(--fm)}
+.rival.turno{border-color:var(--mostaza);box-shadow:0 0 0 2px var(--mostaza),0 0 18px rgba(201,162,58,.55);animation:pulso 1.2s ease-in-out infinite}
+.rival.fuera{opacity:.35;filter:grayscale(1)}
+.rival .est{font:.6rem var(--fm);letter-spacing:.06em;color:var(--mostaza2)}
+@keyframes pulso{50%{box-shadow:0 0 0 2px var(--mostaza),0 0 4px rgba(201,162,58,.2)}}
+.centro{flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:4px 10px}
+.tablero{display:flex;align-items:center;justify-content:center;gap:clamp(14px,6vw,40px)}
+.mazo,.pila{position:relative;width:var(--cw);height:calc(var(--cw)*1.4286)}
+.mazo .carta-svg,.pila .carta-svg{position:absolute;inset:0;width:100%;height:100%}
+.mazo .carta-svg:nth-child(2){transform:translate(-3px,-3px)}.mazo .carta-svg:nth-child(3){transform:translate(-6px,-6px)}
+.mazo .cnt,.pila .cnt{position:absolute;left:50%;bottom:-12px;transform:translateX(-50%);background:#000;color:var(--mostaza2);font:700 .66rem var(--fm);letter-spacing:.12em;padding:3px 7px;white-space:nowrap;border:1px solid var(--mostaza)}
+.pila .debajo{opacity:.5;transform:rotate(-8deg) translate(-8px,4px)}
+.pila .arriba{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.pila .combo2{position:absolute;inset:0;transform:rotate(9deg) translate(14px,2px)}
+.vacio{position:absolute;inset:0;border:2px dashed rgba(239,233,214,.3);border-radius:10px}
+.cartel{max-width:520px;width:100%;text-align:center;font:700 .76rem/1.35 var(--fm);letter-spacing:.1em;text-transform:uppercase;background:#000;color:var(--mostaza2);padding:13px 10px;position:relative;min-height:46px}
+.cartel::before,.cartel::after{content:"";position:absolute;left:4px;right:4px;height:5px;background:repeating-linear-gradient(90deg,rgba(239,233,214,.8) 0 7px,transparent 7px 15px)}
+.cartel::before{top:3px}.cartel::after{bottom:3px}
+.cartel b{color:#fff}
+.pista{font:italic .9rem var(--fs);color:#d9d2bd;text-align:center;min-height:1.3em}
+.historia{display:flex;gap:4px;justify-content:center;min-height:30px}
+.historia .carta-svg{width:21px;height:30px;opacity:.85}
+.yo{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:4px 12px;font:700 .72rem var(--fm);letter-spacing:.1em;text-transform:uppercase}
+.yo .pts{font-family:var(--fd);font-size:1.3rem;letter-spacing:0}
+.yo.turno{color:var(--mostaza2)}
+.mano{display:flex;justify-content:center;align-items:flex-end;gap:8px;padding:6px 8px 4px;min-height:calc(var(--mw)*1.4286 + 22px);--mw:min(27vw,124px)}
+.mano.muchas{--mw:min(calc((100vw - 40px) / var(--n)), 96px);gap:3px}
+.mano .c{position:relative;width:var(--mw);height:calc(var(--mw)*1.4286);border:0;padding:0;background:none;border-radius:11px;transition:transform .18s,filter .18s;flex:none}
+.mano .c .carta-svg{width:100%;height:100%;display:block}
+.mano .c.ok{transform:translateY(-10px);filter:drop-shadow(0 0 10px rgba(232,201,106,.75))}
+.mano .c.no{filter:brightness(.5) saturate(.6)}
+.mano .c.sel{transform:translateY(-22px);filter:drop-shadow(0 0 14px #fff)}
+.mano.espera .c{filter:brightness(.8)}
+.acc{display:flex;gap:8px;justify-content:center;padding:6px 10px calc(10px + env(safe-area-inset-bottom));min-height:62px;flex-wrap:wrap}
+.acc .btn{width:auto;flex:1;max-width:220px;min-height:48px;margin:0;font-size:1.15rem;justify-content:center;box-shadow:4px 4px 0 #000;border-color:#000}
+.vuela{transition:transform .38s cubic-bezier(.2,.8,.25,1),opacity .38s}
+/* ---------- capas ---------- */
+.capa{position:fixed;inset:0;z-index:20;background:rgba(5,8,10,.72);display:grid;place-items:center;padding:14px;animation:aparece .2s ease-out}
+.hoja{width:100%;max-width:540px;max-height:calc(100dvh - 28px);overflow:auto;background:var(--papel);color:var(--tinta);border:3px solid #000;box-shadow:8px 8px 0 #000;position:relative}
+.hoja .cuerpo{padding:12px 16px 16px}
+@keyframes aparece{from{opacity:0}}
+.res{width:100%;border-collapse:collapse;margin:8px 0}
+.res td,.res th{padding:7px 4px;border-bottom:1.5px dashed var(--gris);text-align:left;font-size:.92rem}
+.res th{font:700 .64rem var(--fm);letter-spacing:.14em;text-transform:uppercase;color:var(--gris)}
+.res .d{font-family:var(--fd);font-size:1.15rem;text-align:right}
+.res .d.mas{color:var(--tierra)}.res .d.menos{color:var(--rojo)}
+.res .tot{font-family:var(--fd);font-size:1.15rem;text-align:right}
+.res .mini-c{display:inline-flex;gap:2px;vertical-align:middle}
+.res .mini-c .carta-svg{width:16px;height:23px}
+.res tr.gana td{background:rgba(201,162,58,.25)}
+.res tr.fuera td{opacity:.5;text-decoration:line-through}
+.cubre{position:fixed;inset:0;z-index:25;background:var(--petroleo);color:var(--papel);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;text-align:center}
+.cubre h2{font-family:var(--fd);font-size:2.6rem;line-height:.9;margin:0}
+.cubre .logo{width:120px;height:120px}
+.flash{position:fixed;inset:0;z-index:30;pointer-events:none;display:grid;place-items:center;animation:flash 1.6s ease-out forwards}
+.flash.caos{background:radial-gradient(circle at 38% 42%,#000 0 18%,transparent 19%),radial-gradient(circle at 64% 60%,#fff 0 12%,transparent 13%),rgba(10,10,10,.85)}
+.flash .grande{font-family:var(--fd);font-size:clamp(3rem,16vw,6rem);color:#fff;text-shadow:4px 4px 0 var(--rojo);transform:rotate(-6deg)}
+@keyframes flash{0%{opacity:0;transform:scale(1.2)}12%{opacity:1;transform:none}75%{opacity:1}100%{opacity:0}}
+#aviso{position:fixed;left:50%;bottom:calc(84px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;background:var(--mostaza);color:#111;border:2px solid #000;box-shadow:4px 4px 0 #000;padding:10px 16px;font:700 .8rem var(--fm);letter-spacing:.06em;max-width:92vw;display:none}
+#aviso.on{display:block;animation:aparece .15s}
+.corona{font-family:var(--fd);font-size:clamp(3rem,15vw,5.4rem);line-height:.85;color:var(--rojo);margin:6px 0}
+.qr{display:block;width:min(78vw,300px);height:auto;margin:8px auto;image-rendering:pixelated;background:#fff;padding:8px;border:2px solid #000}
+.codigo{width:100%;min-height:84px;font:.72rem/1.3 var(--fm);word-break:break-all;border:2px solid var(--tinta);background:#fffdf6;padding:8px;color:var(--tinta);-webkit-user-select:text;user-select:text}
+video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
+@media (min-width:700px){.vence{grid-template-columns:1fr 1fr}.acc .btn{font-size:1.25rem}}
+@media (orientation:landscape) and (max-height:520px){
+  :root{--cw:min(17vh*1.2,96px)}
+  .mano{--mw:min(19vh,86px)}
+  .rivales{padding:4px 8px}.rival .abanico{height:26px}.rival .abanico .carta-svg{width:16px;height:23px}
+  .historia{display:none}
+}
