@@ -23,3 +23,9 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - `tools/build.js` genera `index.html` (~210 KB, un solo archivo). `package.json` con scripts.
 - Probado: `tests/ui.js` (360x740: juego clásico completo hasta campeón, Combos con 2 humanos, Solitario, Familiar, continuar, pantallas sin desbordamiento, bot interno 120 juegos, 0 errores de consola). `tests/lan.js` (2 navegadores conectados por código, juego completo sincronizado, desconexión → bot). OK.
 - Falta: probar en celulares reales (cámara/QR y mDNS de WebRTC varían por red), empaquetado Capacitor.
+
+## 2026-11-03 · Pulido 1 (pedido del usuario)
+- Usuario: la suerte es el enganche, no tocarla; el juego sigue hasta 10 puntos o hasta que quede uno. Créditos: solo "OneZero".
+- Solitario releído: mitad 1 = mazo auxiliar (inicial + robos); mitad 2 = tus 3 cartas + mazo rival; gana quien gaste primero sus 3 cartas → la ganadora siempre es la 4ª/5ª/6ª de la mesa (verificado por el bot en cada solitario). La mesa muestra "AUXILIAR", "MESA · Nª", "TÚ x/3 · MAZO y/3" y explica "repetida, se aparta · sigues tú".
+- Nuevo: racha (motor `J.racha`), camino a la corona en resultados, avisos de suspenso, "¡ÚLTIMA!" en rivales con 1 carta, siguiente partida automática (6 s, pausable), sonido de barajar, estadísticas del invitado LAN.
+- Probado: simulación 800 juegos (34 casos), UI y LAN: todo OK, 0 errores de consola.

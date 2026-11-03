@@ -1,7 +1,7 @@
 # NEXUS CAOS — Guía de contexto (para humanos y para otra IA)
 
 > Si eres una IA que continúa este proyecto: lee esta guía completa y luego `docs/BITACORA.md`.
-> El usuario (Juan Felipe Rico Vieira, cocreador con Miguel Ángel Vásquez Muñoz) quiere respuestas **cortas, en español**,
+> El usuario y creador firma como **OneZero** (créditos del juego: solo "OneZero"). Quiere respuestas **cortas, en español**,
 > trabajo quirúrgico, pocas capturas, y que **se respeten las reglas originales del documento** `NEXUS-CAOS-1.docx`.
 
 ## 1. Qué es
@@ -53,7 +53,7 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
   - Vendaval (Aire+Tierra) vence: Fuego
   - Tormenta (Aire+Agua) vence: Vendaval
   - Las cartas sueltas se juegan con la lógica normal; una carta suelta no vence a un combo (el documento no lo dice).
-- **Solitario**: mitades 25/25 (o 24/24 sin Caos). Mitad A = tu mazo (carta inicial y auxiliares). Mitad B = tus 3 cartas + mazo rival (22/21). El mazo rival sale primero: voltea; si se sobrepone, la pone; si no (repetida), se aparta y sigues tú. Gana quien **ponga primero 3 cartas**. Si el mazo rival se agota, gana quien haya puesto más (empate si igual).
+- **Solitario** (releído con el usuario): mitades 25/25 (o 24/24 sin Caos). Mitad 1 = tu mazo **auxiliar** (de ahí sale la carta inicial y las cartas que robas cuando estás cerrado). Mitad 2 = sacas tus 3 cartas y el resto es el **mazo rival** (22, o 21 sin Caos). El mazo rival sale primero: voltea su carta; si se sobrepone a la mesa la pone, si es repetida (o no se sobrepone) la aparta y sigues tú. Tú juegas con las reglas normales (si estás cerrado robas del auxiliar o cedes). Gana quien **gaste primero sus 3 cartas** (3 cartas puestas en la mesa). Por eso la carta ganadora siempre es la **4ª, 5ª o 6ª de la mesa contando la inicial**, como dice el documento (el bot de pruebas lo verifica en cada solitario). Si sale una Caos, gana quien la tenga. Si el mazo rival se agotara sin ganador, gana quien gastó más (empate si igual).
 
 ## 4. Decisiones donde el documento no es explícito (registradas)
 1. Caos no puede ser la carta inicial: vuelve al mazo (posición al azar) y se saca otra.
@@ -73,7 +73,7 @@ node tests/ui.js               # interfaz en Chromium (360x740), sin errores de 
 Dentro del juego: Ajustes → **Bot de pruebas** (corre lo mismo en el dispositivo).
 
 ## 6. Datos personales
-El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **no se incluyen en el juego**. Solo nombres en créditos.
+El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **no se incluyen en el juego**. Créditos: solo **OneZero** (pedido del usuario).
 
 ## 7. Arquitectura de la interfaz (`src/ui.js`)
 - `G` = sesión: `{ J (estado del motor; null en invitado LAN), vista (solo invitado), locales (asientos humanos de este dispositivo), viendo, cubierto (pasa-el-celular), ultimo (último evento), sel (selección en Combos), red, mapaRed {asiento: idPar} }`.
@@ -81,6 +81,11 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 - `hacer(accion, asiento)` = única puerta para cambiar el estado (valida con `Motor.aplicar`). Los invitados mandan `{t:'accion'}` y el anfitrión llama `hacer`.
 - La mesa se pinta completa desde `Motor.vista(J, asiento)` (no ve manos ajenas). Animación FLIP solo de la carta jugada.
 - `VISTAS.*` devuelven HTML; `ACC.*` son los botones (`data-a`). Guardado en `localStorage` con prefijo `nexus.` (ajustes, stats, config, partida).
+
+### Flujo "partida rápida"
+- Resultados con barra "camino a la corona" (−5 … 10), avisos de suspenso (a X de la corona / a X de quedar fuera), descalificados, **racha** (partidas seguidas ganadas: `J.racha`).
+- **Siguiente partida automática** (cuenta regresiva de 6 s, se puede pausar; Ajustes → desactivar).
+- Rival con 1 carta: marco rojo y "¡ÚLTIMA!".
 
 ## 8. LAN (`src/red.js`, `src/qr.js`)
 1. Anfitrión: Modo LAN → Crear sala → «+ Invitar» (un código/QR por invitado).
@@ -98,7 +103,8 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 - QR validado con un decodificador externo (jsQR, solo para la prueba; no va en el juego).
 
 ## 10. Pendientes / ideas
-- Confirmar con el usuario: (a) `mesaLimpia` en Combos; (b) castigo Caos por defecto (`cartas` vs `fijo`); (c) en Solitario, ganar = poner 3 cartas.
+- **La suerte es el enganche** (decisión del usuario): no reducir el azar; el juego sigue partida tras partida hasta que alguien llega a 10 o queda uno solo.
+- Confirmar con el usuario: (a) `mesaLimpia` en Combos; (b) castigo Caos por defecto (`cartas` vs `fijo`).
 - Probar en celulares reales (cámara/QR, WebRTC en su Wi-Fi, rendimiento).
 - Empaquetar Android con Capacitor: copiar `index.html` a `www/`, `npx cap add android`. Opcional: descubrimiento LAN nativo (NSD) para evitar códigos.
 - Opcional: estadísticas del invitado LAN, reconexión, más idiomas.

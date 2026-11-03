@@ -10,7 +10,7 @@
     set(k, v) { try { localStorage.setItem('nexus.' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('nexus.' + k); } catch (e) {} }
   };
-  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false }, LS.get('ajustes', {}));
+  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false, auto: true }, LS.get('ajustes', {}));
   const ST = Object.assign({ partidas: 0, ganadas: 0, coronas: 0, caos: 0, soloG: 0, soloP: 0 }, LS.get('stats', {}));
   const guardaAJ = () => { LS.set('ajustes', AJ); SND.activo = AJ.sonido; SND.vibrar = AJ.vibrar; document.body.classList.toggle('quieto', !!AJ.quieto); };
   const guardaST = () => LS.set('stats', ST);
@@ -18,6 +18,7 @@
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
+  const TEXTO_SOLO = 'Tú contra el mazo. Se parte la baraja en dos mitades de 25 (24 sin Caos). Mitad 1: tu mazo auxiliar, de ahí sale la carta inicial y las que robas. Mitad 2: sacas tus 3 cartas y el resto es el mazo rival (22, o 21 sin Caos). El mazo rival sale primero: voltea su carta; si se sobrepone a la mesa la pone, si es repetida (o no se sobrepone) la aparta y sigues tú. Gana quien gaste primero sus 3 cartas: la carta ganadora siempre es la 4ª, 5ª o 6ª de la mesa, contando la inicial.';
 
   // ---------- estado ----------
   let pantalla = 'inicio';
@@ -86,7 +87,7 @@
       '<button class="btn ng" data-a="lan">Modo LAN <small>Wi-Fi sin internet</small></button>' +
       '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
       '<p class="maq" style="margin-top:14px">Récord · ' + ST.ganadas + ' partidas ganadas · ' + ST.coronas + ' coronas · ' + ST.caos + ' caos</p>' +
-      '<p class="nota">Ideado y creado por Juan Felipe Rico Vieira · cocreación y diseño: Miguel Ángel Vásquez Muñoz. Medellín, Colombia.</p>' +
+      '<p class="nota creditos">Un juego de <b>OneZero</b></p>' +
       '</div><span class="pagnum">PAG 01</span></div>';
   };
 
@@ -98,7 +99,7 @@
       clasico: '3 cartas, con Caos. Gana +2 (Caos +5). Llega a 10 y eres campeón; en −5 quedas descalificado.',
       familiar: 'Para niños: sin Caos, nadie queda fuera, el marcador no baja de 0 y solo pierde 1 quien quede con 3 cartas.',
       combos: '2 a 6 jugadores, 6 cartas (tope 9), sin Caos. Combina dos elementos: Lodo, Vendaval, Tormenta, Fogata máxima, Oxígeno maligno y Evaporación masiva.',
-      solitario: 'Tú contra el mazo: el mazo sale primero; gana quien ponga 3 cartas antes.'
+      solitario: TEXTO_SOLO
     };
     let h = '<div class="pag">' + franja('Nueva partida', 'PAG 02') + '<div class="cuerpo">' +
       '<h2 class="tit">ELIGE TU <span class="rojo">CAOS</span></h2><span class="campo">Modo</span>' +
@@ -149,7 +150,7 @@
     '<p class="nota">* O −3 a todos, según el ajuste. Se resta aunque tengas 0: en −5 quedas descalificado; con 10 eres el campeón, el rey de reyes.</p>' +
     '<h3 class="tit">Cierre por lógica</h3><p>Si da una vuelta completa sin que nadie pueda jugar ni robar, la partida se cierra sin ganador: 1 carta no pierde, 2 cartas −1, 3 cartas −2.</p>' +
     '<h3 class="tit">Modos</h3><p><b>Clásico</b>: el original. <b>Familiar y niños</b>: sin Caos, nadie queda fuera, no baja de 0, solo pierde 1 quien quede con 3. ' +
-    '<b>Combos</b> (2–6): 6 cartas, tope 9; con n cartas al final pierdes n (1 carta no pierde). <b>Solitario</b>: tú contra el mazo.</p>' +
+    '<b>Combos</b> (2–6): 6 cartas, tope 9; con n cartas al final pierdes n (1 carta no pierde).</p><p><b>Solitario</b>: ' + TEXTO_SOLO + '</p>' +
     '<div class="caja"><b class="fd">COMBOS</b><br>' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(v => M.COMBOS[v] ? M.COMBOS[v].n : M.NOMBRE[v]).join(', ')).join('<br>') + '</div>' +
     '<h3 class="tit">Extras</h3><p>El ganador tira primero la siguiente partida para mantener su racha; el que pierde reparte. Las partidas ganadas se cuentan para presumir.</p>' +
     '<button class="btn" data-a="inicio">Volver</button></div><span class="pagnum">PAG 03</span></div>';
@@ -159,6 +160,7 @@
     '<label class="tg">Sonido<input type="checkbox" data-c="sonido"' + (AJ.sonido ? ' checked' : '') + '></label>' +
     '<label class="tg">Vibración<input type="checkbox" data-c="vibrar"' + (AJ.vibrar ? ' checked' : '') + '></label>' +
     '<label class="tg">Reducir animaciones<input type="checkbox" data-c="quieto"' + (AJ.quieto ? ' checked' : '') + '></label>' +
+    '<label class="tg">Siguiente partida automática<input type="checkbox" data-c="auto"' + (AJ.auto ? ' checked' : '') + '></label>' +
     '<span class="campo">Velocidad de los bots</span>' + [['lenta', 'Lenta'], ['normal', 'Normal'], ['rapida', 'Rápida']].map(([v, n]) => '<button class="chip' + (AJ.velocidad === v ? ' on' : '') + '" data-a="vel" data-v="' + v + '">' + n + '</button>').join('') +
     '<span class="campo">Reverso de las cartas</span><div style="display:flex;gap:10px">' + [['baja', 'Gama baja'], ['media', 'Gama media'], ['alta', 'Gama alta']].map(([v, n]) =>
       '<button class="chip' + (AJ.reverso === v ? ' on' : '') + '" data-a="reverso" data-v="' + v + '" style="flex-direction:column;padding:6px">' + A.reverso(v, '') .replace('class="carta-svg ', 'style="width:56px;height:80px" class="carta-svg ') + n + '</button>').join('') + '</div>' +
@@ -296,7 +298,7 @@
     }
     if (ev.t === 'robar') return n(ev.p) + ' ESTÁ CERRADO Y ROBA ' + ev.n;
     if (ev.t === 'pasar') return (ev.robo ? n(ev.p) + ' CEDE EL TURNO' : n(ev.p) + ' PASA (CERRADO)') + (ev.limpia ? ' · MESA LIMPIA: SALE <b>' + NOM(ev.limpia) + '</b>' : '');
-    if (ev.t === 'apartar') return 'EL MAZO SACA ' + NOM(ev.carta.e) + ': NO SE SOBREPONE, SE APARTA';
+    if (ev.t === 'apartar') return 'EL MAZO SACA ' + NOM(ev.carta.e) + (ev.sobre && ev.sobre.e === ev.carta.e ? ': REPETIDA' : ': NO SE SOBREPONE A ' + nombreJugada(ev.sobre)) + ', SE APARTA · <b>SIGUES TÚ</b>';
     if (ev.t === 'agotado') return 'EL MAZO SE AGOTÓ';
     return '';
   }
@@ -312,8 +314,10 @@
       const j = v.jug[i], esMazo = j.tipo === 'mazo';
       const cnt = esMazo ? v.rival.mazo : j.n;
       const fan = Array.from({ length: Math.min(esMazo ? 3 : cnt, MD.tope) }, () => A.reverso(rev)).join('');
-      const est = esMazo ? 'PUESTAS ' + v.rival.puestas + '/3 · APARTADAS ' + v.rival.apartadas : (j.fuera ? 'FUERA' : '★' + j.ganadas + (j.tipo === 'bot' ? ' · ' + NIVEL[j.nivel] : j.tipo === 'red' ? ' · LAN' : ''));
-      return '<div class="rival' + (v.turno === i && v.fase !== 'fin' ? ' turno' : '') + (j.fuera ? ' fuera' : '') + '" data-j="' + i + '"><span class="n">' + cnt + '</span><div class="abanico">' + fan + '</div>' +
+      const racha = v.racha && v.racha.j === i && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
+      const est = esMazo ? 'PUESTAS ' + v.rival.puestas + '/3 · APARTADAS ' + v.rival.apartadas : (j.fuera ? 'FUERA' : '★' + j.ganadas + racha + (j.tipo === 'bot' ? ' · ' + NIVEL[j.nivel] : j.tipo === 'red' ? ' · LAN' : ''));
+      const ultima = !esMazo && !j.fuera && j.n === 1 && v.fase !== 'fin';
+      return '<div class="rival' + (v.turno === i && v.fase !== 'fin' ? ' turno' : '') + (j.fuera ? ' fuera' : '') + (ultima ? ' ultima' : '') + '" data-j="' + i + '">' + (ultima ? '<span class="aviso1">¡ÚLTIMA!</span>' : '') + '<span class="n">' + cnt + '</span><div class="abanico">' + fan + '</div>' +
         '<div class="nm">' + esc(j.nombre) + '</div>' + (esMazo ? '' : '<div class="pt' + (j.puntos < 0 ? ' neg' : '') + '">' + j.puntos + '</div>') + '<div class="est">' + est + '</div></div>';
     }).join('');
     // historia (jugadas anteriores)
@@ -323,8 +327,8 @@
     let pila = prev ? A.carta(elemsJugada(prev)[0], 'debajo') : '';
     const te = elemsJugada(top);
     pila += te.length === 2 ? A.carta(te[0], 'arriba') + A.carta(te[1], 'combo2') : A.carta(te[0], 'arriba');
-    const mazoN = v.modo === 'solitario' ? v.mazo : v.mazo;
-    const mazo = (mazoN ? Array.from({ length: Math.min(3, mazoN) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">MAZO ' + mazoN + '</span>';
+    const mazoN = v.mazo, solo = v.modo === 'solitario';
+    const mazo = (mazoN ? Array.from({ length: Math.min(3, mazoN) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">' + (solo ? 'AUXILIAR ' : 'MAZO ') + mazoN + '</span>';
     // mano
     const jugables = {}, combos = [];
     (v.acciones || []).forEach(a => {
@@ -353,15 +357,16 @@
       else pista = 'Estás cerrado' + (v.mazo ? ' con el tope de cartas' : ' y el mazo está vacío') + ': pasa.';
     } else if (nt) pista = 'Turno de ' + esc(nt.nombre) + '…';
     const yoJ = v.jug[yo] || { nombre: '', puntos: 0, ganadas: 0 };
-    const info = v.modo === 'solitario' ? 'PUESTAS ' + v.puestasJ + '/3' : yoJ.puntos + ' PTS';
+    const info = v.modo === 'solitario' ? 'TÚ ' + v.puestasJ + '/3 · MAZO ' + v.rival.puestas + '/3' : yoJ.puntos + ' PTS';
+    const miRacha = v.racha && v.racha.j === yo && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
     const dirTxt = v.dir === 1 ? '↻' : '↺';
     const muchas = v.mano.length > 3;
     return '<div class="mesa">' +
       '<div class="msup"><button data-a="menuMesa" aria-label="Menú">☰</button><span class="t">PARTIDA ' + v.np + ' · ' + MD.n + (v.modo === 'solitario' ? '' : ' · META 10') + (G && G.red ? ' · LAN' : '') + '</span><span aria-label="Dirección">' + dirTxt + '</span></div>' +
       '<div class="rivales">' + rivales + '</div>' +
-      '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">MESA</span></div></div>' +
+      '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
-      '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
+      '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas + miRacha) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
       '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + v.mano.length + '">' + mano + '</div>' +
       '<div class="acc">' + acc + '</div></div></div>' +
       (cubierta ? '<div class="cubre">' + A.logo() + '<p class="maq">Pasa el dispositivo a</p><h2>' + esc(yoJ.nombre) + '</h2><button class="btn ms" style="max-width:320px" data-a="destapar">Soy ' + esc(yoJ.nombre) + ': ver mis cartas</button></div>' : '');
@@ -380,7 +385,7 @@
   function mostrarFin() {
     if (!G || pantalla !== 'mesa') return;
     const v = vistaActual(); if (!v || !v.fin) return;
-    const f = v.fin, gn = f.ganador >= 0 ? v.jug[f.ganador] : null;
+    const f = v.fin, gn = f.ganador >= 0 ? v.jug[f.ganador] : null, MD = M.MODOS[v.modo];
     let tit;
     if (v.modo === 'solitario') tit = f.ganador === 0 ? '¡GANASTE!' : f.ganador === 1 ? 'GANA EL MAZO' : 'EMPATE';
     else if (f.tipo === 'caos') tit = '¡CAOS! ' + esc(gn.nombre).toUpperCase() + ' +5';
@@ -388,30 +393,56 @@
     else tit = 'GANA ' + esc(gn.nombre).toUpperCase();
     const localGana = G.J ? (G.red ? f.ganador === 0 : G.locales.indexOf(f.ganador) >= 0) : f.ganador === v.yo;
     if (localGana) SND.ganar(); else SND.perder();
-    let h = '<div class="franja"><span>Partida ' + v.np + '</span><span class="der">' + M.MODOS[v.modo].n + '</span></div><div class="cuerpo">';
+    let h = '<div class="franja"><span>Partida ' + v.np + '</span><span class="der">' + MD.n + '</span></div><div class="cuerpo">';
     h += '<h2 class="tit">' + tit + '</h2>';
+    if (f.racha >= 2 && gn) h += '<p class="maq rojo">Racha ×' + f.racha + ': ' + esc(gn.nombre) + ' gana ' + f.racha + ' partidas seguidas</p>';
     if (f.tipo === 'cierre') h += '<p class="nota">Nadie pudo jugar ni robar en una vuelta completa: no hay ganador y se castiga por cartas.</p>';
     if (v.modo === 'solitario') {
-      h += '<p class="ital">' + (f.tipo === 'caos' ? 'Una carta Caos decidió la batalla.' : f.tipo === 'agotado' ? 'El mazo rival se agotó: gana quien puso más cartas.' : 'Quien pone primero 3 cartas, gana.') + '</p>';
-      h += '<p class="maq">Tú ' + v.jug[0].ganadas + ' — Mazo ' + v.jug[1].ganadas + '</p>';
+      const mazoP = v.rival ? v.rival.puestas : 0;
+      h += '<p class="ital">' + (f.tipo === 'caos' ? 'Una carta Caos decidió la batalla.' : f.tipo === 'agotado' ? 'El mazo rival se agotó: gana quien gastó más cartas.' : (f.ganador === 0 ? 'Gastaste tus 3 cartas primero' : 'El mazo gastó sus 3 cartas primero') + ', con la ' + f.mesaN + 'ª carta de la mesa.') + '</p>';
+      h += '<div class="pelicula">Tú ' + v.puestasJ + '/3 · Mazo ' + mazoP + '/3 · Apartadas ' + (v.rival ? v.rival.apartadas : 0) + '</div>';
+      h += '<p class="maq">Marcador · Tú ' + v.jug[0].ganadas + ' — Mazo ' + v.jug[1].ganadas + '</p>';
     } else {
+      const min = MD.desc ? M.DESCALIFICA : 0, rango = M.META - min;
       h += '<table class="res"><tr><th>Jugador</th><th>Mano</th><th style="text-align:right">±</th><th style="text-align:right">Total</th></tr>';
       v.jug.forEach((j, i) => {
         const d = f.delta[i], recien = f.fuera.indexOf(i) >= 0;
         if (j.fuera && !recien) return;
-        h += '<tr class="' + (i === f.ganador ? 'gana' : '') + (recien ? ' fuera' : '') + '"><td>' + esc(j.nombre) + (recien ? ' · FUERA' : '') + ' <small>★' + j.ganadas + '</small></td><td><span class="mini-c">' + f.cartas[i].map(e => A.carta(e)).join('') + '</span></td>' +
+        const pos = Math.max(0, Math.min(100, (j.puntos - min) / rango * 100));
+        h += '<tr class="' + (i === f.ganador ? 'gana' : '') + (recien ? ' fuera' : '') + '"><td>' + esc(j.nombre) + (recien ? ' · FUERA' : '') + ' <small>★' + j.ganadas + '</small>' +
+          '<div class="camino' + (MD.desc ? '' : ' sin-desc') + '"><i style="left:' + pos.toFixed(1) + '%"></i></div></td><td><span class="mini-c">' + f.cartas[i].map(e => A.carta(e)).join('') + '</span></td>' +
           '<td class="d ' + (d > 0 ? 'mas' : d < 0 ? 'menos' : '') + '">' + (d > 0 ? '+' : '') + d + '</td><td class="tot">' + j.puntos + '</td></tr>';
       });
       h += '</table>';
+      // Suspenso: quién está cerca de la corona o de quedar fuera
+      const notas = [];
+      f.fuera.forEach(i => notas.push('<b>' + esc(v.jug[i].nombre) + '</b> queda descalificado (' + v.jug[i].puntos + ')'));
+      if (!v.terminado) v.jug.forEach(j => {
+        if (j.fuera) return;
+        if (j.puntos >= M.META - 3) notas.push('<b>' + esc(j.nombre) + '</b> está a ' + (M.META - j.puntos) + ' de la corona');
+        else if (MD.desc && j.puntos <= M.DESCALIFICA + 2) notas.push('<b>' + esc(j.nombre) + '</b> está a ' + (j.puntos - M.DESCALIFICA) + ' de quedar fuera');
+      });
+      if (notas.length) h += '<div class="caja roja">' + notas.join('<br>') + '</div>';
       const rp = f.reparte >= 0 ? v.jug[f.reparte].nombre : '—', ini = v.inicia >= 0 && v.jug[v.inicia] ? v.jug[v.inicia].nombre : '—';
       if (!v.terminado) h += '<p class="maq">Reparte: ' + esc(rp) + ' · Inicia: ' + esc(ini) + '</p>';
     }
     const manda = !!G.J;
     if (v.terminado) h += '<button class="btn rj" data-a="campeon">Ver campeón</button>';
-    else if (manda) h += '<button class="btn rj" data-a="siguiente">Siguiente partida</button>';
+    else if (manda) h += '<button class="btn rj" data-a="siguiente" id="btnSig">Siguiente partida</button>' + (AJ.auto ? '<button class="btn" data-a="pausaAuto" id="btnPausa">Pausar</button>' : '');
     else h += '<p class="nota">Esperando al anfitrión…</p>';
     h += '<button class="btn" data-a="salir">Salir</button></div>';
     capa(h);
+    // Partida rápida: avanza sola tras una cuenta regresiva (se puede pausar)
+    if (manda && !v.terminado && AJ.auto) {
+      let t = 6;
+      const tick = () => {
+        const b = $('#btnSig'); if (!b || !G || G.np0 !== v.np) return;
+        if (--t <= 0) { ACC.siguiente(); return; }
+        b.textContent = 'Siguiente partida (' + t + ')';
+        G.auto = setTimeout(tick, 1000);
+      };
+      G.np0 = v.np; clearTimeout(G.auto); G.auto = setTimeout(tick, 10);
+    }
   }
   function mostrarCampeon() {
     const v = vistaActual();
@@ -548,7 +579,13 @@
           pintarMesaSegura();
           if (nuevo) animar(o.ev, origen);
           if (o.v.turno === o.v.yo && o.v.fase !== 'fin' && nuevo) SND.turno();
-          if (o.v.fase === 'fin' && (!antes || antes.fase !== 'fin' || antes.np !== o.v.np)) setTimeout(mostrarFin, 1000);
+          if (o.v.fase === 'fin' && (!antes || antes.fase !== 'fin' || antes.np !== o.v.np)) {
+            setTimeout(mostrarFin, 1000);
+            const f = o.v.fin; ST.partidas++;
+            if (f.ganador === o.v.yo) { ST.ganadas++; if (f.tipo === 'caos') ST.caos++; }
+            if (o.v.terminado && o.v.campeon === o.v.yo) ST.coronas++;
+            guardaST();
+          }
           if (o.v.terminado && o.v.fase === 'fin') { /* el campeón se ve desde el resumen */ }
         } else if (o.t === 'error') { aviso(o.e); SND.error(); }
         else if (o.t === 'sala' && SALA) { SALA.estado = o.texto; if (pantalla === 'lan') pintar(); }
@@ -622,9 +659,12 @@
     destapar: () => { G.cubierto = false; SND.turno(); pintarMesaSegura(); },
     menuMesa: () => menuMesa(),
     verVence: () => capa('<div class="cuerpo"><h2 class="tit">QUIÉN VENCE</h2>' + tablaVence() + '<button class="btn" data-a="cerrar">Volver</button></div>'),
+    pausaAuto: () => { if (G) { clearTimeout(G.auto); G.np0 = -1; } const b = $('#btnSig'); if (b) b.textContent = 'Siguiente partida'; const pz = $('#btnPausa'); if (pz) pz.remove(); },
     siguiente: () => {
-      if (!G || !G.J) return;
+      if (!G || !G.J || G.J.p.fase !== 'fin' || G.J.terminado) return;
+      clearTimeout(G.auto); G.np0 = -1;
       cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = [];
+      SND.robar(); setTimeout(() => SND.robar(), 120);
       if (G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano') { G.viendo = G.J.p.turno; G.cubierto = true; }
       ciclo();
     },
@@ -701,7 +741,7 @@
     else if (c === 'mesaLimpia') { NP.mesaLimpia = t.checked; LS.set('config', NP); }
     else if (c === 'caos') { NP.caos = t.checked; LS.set('config', NP); }
     else if (c === 'minombre') { AJ.nombre = t.value.slice(0, 16) || 'Tú'; if (NP.asientos[0] && NP.asientos[0].tipo === 'humano') NP.asientos[0].nombre = AJ.nombre; guardaAJ(); LS.set('config', NP); }
-    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto') { AJ[c] = t.checked; guardaAJ(); }
+    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto' || c === 'auto') { AJ[c] = t.checked; guardaAJ(); }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarCapa(); });
   window.addEventListener('pagehide', guardar);

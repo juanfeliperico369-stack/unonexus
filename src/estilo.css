@@ -171,3 +171,14 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   .acc{min-height:0;padding:4px 6px max(6px,env(safe-area-inset-bottom))}.acc .btn{min-height:42px;font-size:1rem}
   .yo{padding:2px 8px}
 }
+/* camino a la corona (−5 … 10) y alertas */
+.camino{position:relative;height:6px;margin-top:5px;background:linear-gradient(90deg,var(--rojo) 0 33.3%,var(--papel2) 33.3% 100%);border:1px solid var(--tinta);max-width:150px}
+.camino.sin-desc{background:var(--papel2)}
+.camino::after{content:"";position:absolute;right:-1px;top:-4px;width:3px;height:12px;background:var(--mostaza)}
+.camino i{position:absolute;top:-4px;width:8px;height:12px;margin-left:-4px;background:var(--tinta);border:1px solid var(--papel)}
+.rival.ultima{border-color:var(--rojo);box-shadow:0 0 0 2px var(--rojo),0 0 16px rgba(196,34,34,.6)}
+.rival.ultima.turno{box-shadow:0 0 0 2px var(--mostaza),0 0 18px rgba(196,34,34,.8)}
+.aviso1{position:absolute;left:50%;top:-1px;transform:translateX(-50%);background:var(--rojo);color:#fff;font:700 .55rem/1 var(--fm);letter-spacing:.1em;padding:2px 4px;white-space:nowrap;animation:late .9s ease-in-out infinite alternate}
+@keyframes late{to{opacity:.55}}
+.creditos{font-family:var(--fm);font-style:normal;text-transform:uppercase;letter-spacing:.2em;font-size:.72rem}
+.creditos b{color:var(--rojo);letter-spacing:.3em}

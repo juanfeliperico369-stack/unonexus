@@ -38,7 +38,8 @@
   }
   function casos() {
     const f = [];
-    const ok = (c, msg) => { if (!c) f.push(msg); };
+    let total = 0;
+    const ok = (c, msg) => { total++; if (!c) f.push(msg); };
     const V = (a, b) => M.vence({ k: 'carta', e: a }, { k: 'carta', e: b });
     // Reglas de orden
     ok(V('fuego', 'aire') && V('fuego', 'agua') && V('fuego', 'tierra'), 'Fuego debe vencer a Aire, Agua y Tierra');
@@ -74,6 +75,7 @@
     M.aplicar(J, { t: 'jugar', ids: [0] });
     ok(J.p.fin && J.p.fin.tipo === 'normal' && J.jug.map(j => j.puntos).join() === '2,0,-1,-2', 'Puntaje normal 2/0/-1/-2');
     ok(J.inicia === 0, 'El ganador inicia la siguiente');
+    ok(J.racha.j === 0 && J.racha.n === 1 && J.p.fin.mesaN === 2, 'Racha y conteo de cartas en mesa');
     // Caos: +5, quien tiene la otra Caos se salva, resto por cartas
     J = escenario('clasico', [['caos', 'agua'], ['caos', 'agua'], ['agua'], ['agua', 'agua', 'agua']], 'aire', ['tierra']);
     M.aplicar(J, { t: 'jugar', ids: [0] });
@@ -111,6 +113,7 @@
     const antes = JSON.stringify(J);
     M.aplicar(J, { t: 'jugar', ids: [0] }); M.aplicar(J, { t: 'jugar', ids: [99] }); M.aplicar(J, { t: 'xx' }); M.aplicar(J, null);
     ok(JSON.stringify(J) === antes, 'Acciones inválidas no cambian nada');
+    casos.total = total;
     return f;
   }
 
@@ -162,7 +165,8 @@
               if (M.MODOS[modo].desc && jug.puntos <= -5 && !jug.fuera) return fallo('no descalificó en ' + jug.puntos);
             }
             if (fin.ganador >= 0) est.porNivel[J.jug[fin.ganador].nivel]++;
-          } else if (fin.ganador >= 0) est.solo[fin.ganador]++;
+          } else if (fin.tipo === 'normal' && (fin.mesaN < 4 || fin.mesaN > 6)) return fallo('solitario: la carta ganadora debe ser la 4ª, 5ª o 6ª de la mesa (fue ' + fin.mesaN + 'ª)');
+          else if (fin.ganador >= 0) est.solo[fin.ganador]++;
           else est.solo[2]++;
         }
       }
@@ -182,7 +186,7 @@
     const t0 = Date.now();
     const est = { casos: 0, fallosCasos: [], juegos: 0, partidas: 0, acciones: 0, fuzz: 0, fines: {}, modos: {}, porNivel: [0, 0, 0, 0], solo: [0, 0, 0], errores: [] };
     try { est.fallosCasos = casos(); } catch (e) { est.fallosCasos = ['Excepción en casos: ' + e.message]; }
-    est.casos = 31;
+    est.casos = casos.total || 0;
     for (let k = 0; k < opt.juegos; k++) {
       try { unJuego(opt.semilla + k, opt, est); } catch (e) { est.errores.push('semilla ' + (opt.semilla + k) + ': excepción ' + e.message); }
       if (est.errores.length > 20) break;

@@ -137,7 +137,8 @@
         caos: modo === 'solitario' ? cfg.caos !== false : M.caos
       },
       rs: (cfg.semilla >>> 0) || ((Math.random() * 4294967296) >>> 0),
-      jug, np: 0, inicia: -1, campeon: -1, terminado: false, p: null
+      jug, np: 0, inicia: -1, campeon: -1, terminado: false, p: null,
+      racha: { j: -1, n: 0 } // partidas seguidas ganadas por el mismo jugador ("mantener su racha")
     };
     if (cfg.dir === 0) J.cfg.dir = rnd(J) < 0.5 ? 1 : -1; // dirección al azar
     nuevaPartida(J);
@@ -311,9 +312,11 @@
     const delta = J.jug.map(() => 0), manos = J.jug.map(j => j.mano.length);
     const cartas = J.jug.map(j => j.mano.map(c => c.e));
     p.fase = 'fin';
+    const r = J.racha || (J.racha = { j: -1, n: 0 });
+    if (g >= 0) { if (r.j === g) r.n++; else { r.j = g; r.n = 1; } } else { r.j = -1; r.n = 0; }
     if (J.modo === 'solitario') {
       if (g >= 0) J.jug[g].ganadas++;
-      p.fin = { tipo, ganador: g, delta, manos, cartas, fuera: [], reparte: -1 };
+      p.fin = { tipo, ganador: g, delta, manos, cartas, fuera: [], reparte: -1, mesaN: p.mesa.length, racha: r.n };
       return;
     }
     J.jug.forEach((j, i) => {
@@ -347,7 +350,7 @@
     // Inicia la próxima: el ganador (mantiene su racha). Sin ganador: el siguiente de quien inició.
     if (!J.terminado) J.inicia = (g >= 0 && !J.jug[g].fuera) ? g : siguiente(J, J.inicia);
     if (reparte >= 0 && J.jug[reparte].fuera) reparte = -1;
-    p.fin = { tipo, ganador: g, delta, manos, cartas, fuera, reparte };
+    p.fin = { tipo, ganador: g, delta, manos, cartas, fuera, reparte, mesaN: p.mesa.length, racha: r.n };
   }
 
   // ---------- vista (lo que un jugador puede ver) ----------
@@ -358,7 +361,7 @@
       jug: J.jug.map(j => ({ nombre: j.nombre, tipo: j.tipo, nivel: j.nivel, puntos: j.puntos, ganadas: j.ganadas, fuera: j.fuera, n: j.mano.length })),
       mano: (yo >= 0 && J.jug[yo]) ? J.jug[yo].mano.map(c => ({ id: c.id, e: c.e })) : [],
       mesa: p.mesa.slice(-8).map(m => JSON.parse(JSON.stringify(m))),
-      mazo: p.mazo.length, turno: p.turno, fase: p.fase, robo: p.robo, quietos: p.quietos,
+      mazo: p.mazo.length, mesaN: p.mesa.length, racha: J.racha || { j: -1, n: 0 }, turno: p.turno, fase: p.fase, robo: p.robo, quietos: p.quietos,
       rival: R ? { mazo: R.mazo.length, puestas: R.puestas, apartadas: R.apartadas.length } : null,
       puestasJ: p.puestasJ,
       fin: p.fin ? JSON.parse(JSON.stringify(p.fin)) : null,
