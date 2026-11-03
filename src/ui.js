@@ -71,7 +71,7 @@
   function tablaVence() {
     return '<div class="vence">' + ELEM.map(e => {
       const v = Object.keys(M.VENCE[e]);
-      return '<div style="--c:' + A.COLOR[e] + '">' + A.simbolo(e) + '<b>' + NOM(e) + '</b><div>' +
+      return '<div style="--c:' + A.COLOR[e] + '">' + A.simbolo(e) + '<b>' + A.alq(e) + ' ' + NOM(e) + '</b><div>' +
         v.map(x => A.simbolo(x, 'mini-s')).join('') + '<br><span>' + v.map(x => M.VENCE[e][x] + ' ' + M.NOMBRE[x]).join(' · ') + '</span></div></div>';
     }).join('') + '<div style="--c:#fff">' + A.simbolo('caos') + '<b>CAOS</b><div><span>Vence a todo. Victoria inmediata: +5. Final total, nada puede detenerlo.</span></div></div></div>';
   }
@@ -84,7 +84,7 @@
     const hay = !!LS.get('partida', null);
     return '<div class="pag portada">' + franja('Nexus Caos · Edición Nº 1', 'Cartas elementales') +
       '<div class="cuerpo"><div class="cabeza"><h1>NEXUS<b>CAOS</b></h1>' + A.logo() + '</div>' +
-      '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
+      A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
       '<div class="pelicula">4 elementos · 50 cartas · 2 a 12 jugadores · gana quien llegue a 10 · −5 queda fuera</div>' +
       (hay ? '<button class="btn ms" data-a="continuar">Continuar partida <small>guardada</small></button>' : '') +
       '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' +
@@ -92,7 +92,8 @@
       '<button class="btn ng" data-a="lan">Modo LAN <small>Wi-Fi sin internet</small></button>' +
       '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
       '<p class="maq" style="margin-top:14px">Récord · ' + ST.ganadas + ' partidas ganadas · ' + ST.coronas + ' coronas · ' + ST.caos + ' caos</p>' +
-      '<p class="nota creditos">Un juego de <b>OneZero</b></p>' +
+      '<div class="sep" aria-hidden="true">' + ['fuego', 'agua', 'aire', 'tierra', 'tao'].map(e => A.alq(e)).join('') + '</div>' +
+      '<p class="nota creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p>' +
       '</div><span class="pagnum">PAG 01</span></div>';
   };
 
@@ -123,8 +124,8 @@
         [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('') +
         '<p class="nota">El documento trae las dos versiones (reglas y sinopsis). Quien tenga la otra Caos se salva.</p>';
       const ml = NP.mesaLimpia == null ? NP.modo === 'combos' : NP.mesaLimpia;
-      h += '<label class="tg">Mesa limpia (regla de la casa, no está en el documento)<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
-        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo. Recomendada en Combos.</p>';
+      h += '<label class="tg">Mesa limpia<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
+        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo. Activada en Combos.</p>';
     } else {
       h += '<label class="tg">Jugar con las 2 cartas Caos (25/25)<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
         '<p class="maq">Récord solitario · tú ' + ST.soloG + ' — mazo ' + ST.soloP + '</p>';
@@ -156,7 +157,7 @@
     '<h3 class="tit">Cierre por lógica</h3><p>Si da una vuelta completa sin que nadie pueda jugar ni robar, la partida se cierra sin ganador: 1 carta no pierde, 2 cartas −1, 3 cartas −2.</p>' +
     '<h3 class="tit">Modos</h3><p><b>Clásico</b>: el original. <b>Familiar y niños</b>: sin Caos, nadie queda fuera, no baja de 0, solo pierde 1 quien quede con 3. ' +
     '<b>Combos</b> (2–6): 6 cartas, tope 9; con n cartas al final pierdes n (1 carta no pierde).</p><p><b>Solitario</b>: ' + TEXTO_SOLO + '</p>' +
-    '<div class="caja"><b class="fd">COMBOS</b><br>' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(v => M.COMBOS[v] ? M.COMBOS[v].n : M.NOMBRE[v]).join(', ')).join('<br>') + '</div>' +
+    '<div class="caja"><b class="fd">COMBOS</b><br>' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(v => M.COMBOS[v] ? M.COMBOS[v].n : M.NOMBRE[v]).join(', ')).join('<br>') + '<br><i>Mesa limpia: si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo.</i></div>' +
     '<h3 class="tit">Extras</h3><p>El ganador tira primero la siguiente partida para mantener su racha; el que pierde reparte. Las partidas ganadas se cuentan para presumir.</p>' +
     '<button class="btn" data-a="inicio">Volver</button></div><span class="pagnum">PAG 03</span></div>';
 
@@ -174,7 +175,7 @@
     '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord y ajustes son tuyos.</p>' +
     '<div class="fila-btn"><button class="btn" data-a="exportar">Exportar</button><button class="btn" data-a="importar">Importar</button></div><input type="file" id="archivo" accept=".json,application/json" class="oculto">' +
     '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button>' +
-    '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero</p></div></div>';
+    '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero por Infinite Tree</p></div></div>';
 
   // ======================================================================
   // JUEGO (controlador)

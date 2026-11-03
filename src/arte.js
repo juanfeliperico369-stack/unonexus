@@ -93,24 +93,36 @@
     }
     return s;
   }
+  // Logo (boceto del documento): todo queda DENTRO del círculo (recorte de seguridad nx-clip-logo).
   function logoSVG() {
-    let s = '<circle cx="50" cy="50" r="47" fill="#efe9d6" stroke="#000" stroke-width="2.5"/>';
+    let s = '<circle cx="50" cy="50" r="47" fill="#efe9d6"/>';
     let pts = '';
-    for (let k = 0; k < 70; k++) { const a = k * 2.399, r = 8 + 36 * Math.sqrt((k + 0.5) / 70); pts += '<circle cx="' + (50 + r * Math.cos(a)).toFixed(1) + '" cy="' + (50 + r * Math.sin(a)).toFixed(1) + '" r=".9"/>'; }
-    s += '<g fill="#000" opacity=".55">' + pts + '</g>';
-    s += '<g transform="translate(14 12) scale(.36)">' + grupoColor('aire_d', '#000', 6) + '</g>';
-    s += '<g transform="translate(8 50) scale(.38) rotate(-20 50 50)">' + grupoColor('tierra_d', '#000', 6) + '</g>';
-    s += '<g transform="translate(58 56) scale(.36)">' + grupoColor('fuego_d', '#000', 6) + '</g>';
-    s += '<g transform="translate(50 6) scale(.3)">' + grupoColor('agua_d', '#000', 7) + '</g>';
-    s += '<circle cx="64" cy="36" r="13" fill="#000"/><circle cx="38" cy="58" r="9" fill="#fff" stroke="#000" stroke-width="2"/>';
+    for (let k = 0; k < 64; k++) { const a = k * 2.399, r = 6 + 35 * Math.sqrt((k + 0.5) / 64); pts += '<circle cx="' + (50 + r * Math.cos(a)).toFixed(1) + '" cy="' + (50 + r * Math.sin(a)).toFixed(1) + '" r=".8"/>'; }
+    s += '<g clip-path="url(#nx-clip-logo)"><g fill="#000" opacity=".5">' + pts + '</g>';
+    s += '<g transform="translate(21 19) scale(.29)">' + grupoColor('aire_d', '#000', 7) + '</g>';
+    s += '<g transform="translate(19 52) scale(.28)">' + grupoColor('tierra_d', '#000', 7) + '</g>';
+    s += '<g transform="translate(56 53) scale(.28)">' + grupoColor('fuego_d', '#000', 7) + '</g>';
+    s += '<g transform="translate(41 68) scale(.2)">' + grupoColor('agua_d', '#000', 9) + '</g>';
+    s += '<circle cx="62" cy="36" r="11.5" fill="#000"/><circle cx="40" cy="56" r="8" fill="#fff" stroke="#000" stroke-width="2"/></g>';
+    s += '<circle cx="50" cy="50" r="46" fill="none" stroke="#000" stroke-width="3"/><circle cx="50" cy="50" r="42.5" fill="none" stroke="#000" stroke-width=".8" opacity=".6"/>';
     return s;
   }
+  // Símbolos alquímicos clásicos de los 4 elementos + Tao (☯) para la interfaz (no para las cartas).
+  const ALQ = {
+    fuego: '<path d="M50 12 L90 84 H10 Z"/>',
+    agua: '<path d="M10 16 H90 L50 88 Z"/>',
+    aire: '<path d="M50 12 L90 84 H10 Z"/><path d="M22 60 H78"/>',
+    tierra: '<path d="M10 16 H90 L50 88 Z"/><path d="M22 40 H78"/>'
+  };
+  const TAO = '<circle cx="50" cy="50" r="44" fill="#fff" stroke="#000" stroke-width="5"/><path d="M50 6 A44 44 0 0 1 50 94 A22 22 0 0 1 50 50 A22 22 0 0 0 50 6 Z" fill="#000"/><circle cx="50" cy="28" r="7" fill="#fff"/><circle cx="50" cy="72" r="7" fill="#000"/>';
   let instalado = false;
   function instalar() {
     if (instalado || typeof document === 'undefined') return;
     instalado = true;
     const ns = 'http://www.w3.org/2000/svg';
-    let defs = '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath>';
+    let defs = '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath><clipPath id="nx-clip-logo"><circle cx="50" cy="50" r="42"/></clipPath>';
+    ['fuego', 'agua', 'tierra', 'aire'].forEach(e => { defs += '<symbol id="nx-a-' + e + '" viewBox="0 0 100 100"><g fill="none" stroke="' + COLOR[e] + '" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">' + ALQ[e] + '</g></symbol>'; });
+    defs += '<symbol id="nx-a-tao" viewBox="0 0 100 100">' + TAO + '</symbol>';
     ['fuego', 'agua', 'tierra', 'aire', 'caos'].forEach(e => { defs += '<symbol id="nx-c-' + e + '" viewBox="0 0 140 200">' + frente(e) + '</symbol>'; });
     ['baja', 'media', 'alta'].forEach(g => { defs += '<symbol id="nx-r-' + g + '" viewBox="0 0 140 200">' + reversoSVG(g) + '</symbol>'; });
     ['fuego', 'agua', 'tierra', 'aire'].forEach(e => { defs += '<symbol id="nx-s-' + e + '" viewBox="0 0 100 100">' + grupo(e + '_s', COLOR[e], 6) + '</symbol>'; });
@@ -128,7 +140,9 @@
     carta: (e, cls) => usar('nx-c-' + e, '0 0 140 200', 'carta-svg ' + (cls || ''), NOMBRE[e]),
     reverso: (g, cls) => usar('nx-r-' + (g || 'baja'), '0 0 140 200', 'carta-svg ' + (cls || ''), 'Reverso'),
     simbolo: (e, cls) => usar('nx-s-' + e, '0 0 100 100', 'sim ' + (cls || ''), NOMBRE[e]),
-    logo: cls => usar('nx-logo', '0 0 100 100', 'logo ' + (cls || ''), 'Logo Nexus Caos')
+    logo: cls => usar('nx-logo', '0 0 100 100', 'logo ' + (cls || ''), 'Logo Nexus Caos'),
+    alq: (e, cls) => usar('nx-a-' + e, '0 0 100 100', 'alq ' + (e === 'tao' ? 'tao ' : '') + (cls || ''), e === 'tao' ? 'Tao' : NOMBRE[e]),
+    alqs: () => '<div class="alqs" aria-hidden="true">' + ['fuego', 'agua', 'aire', 'tierra'].map(e => usar('nx-a-' + e, '0 0 100 100', 'alq')).join('') + usar('nx-a-tao', '0 0 100 100', 'alq tao') + '</div>'
   };
   raiz.Arte = Arte;
   if (typeof module !== 'undefined' && module.exports) module.exports = Arte;

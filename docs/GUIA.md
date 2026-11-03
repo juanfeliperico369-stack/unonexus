@@ -1,7 +1,7 @@
 # NEXUS CAOS — Guía de contexto (para humanos y para otra IA)
 
 > Si eres una IA que continúa este proyecto: lee esta guía completa y luego `docs/BITACORA.md`.
-> El usuario y creador firma como **OneZero** (créditos del juego: solo "OneZero"). Quiere respuestas **cortas, en español**,
+> El usuario y creador firma como **OneZero** (créditos del juego: "Un juego de OneZero por Infinite Tree"). Quiere respuestas **cortas, en español**,
 > trabajo quirúrgico, pocas capturas, y que **se respeten las reglas originales del documento** `NEXUS-CAOS-1.docx`.
 
 ## 1. Qué es
@@ -31,7 +31,7 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
 | `src/red.js` | LAN: WebRTC DataChannel sin servidor + códigos comprimidos + QR. |
 | `src/qr.js` | Generador de QR propio (sin librerías). |
 | `src/ui.js` | Pantallas, mesa, controlador de turnos, guardado. |
-| `src/estilo.css` | Estilos. `src/fuentes.css`: fuentes embebidas (base64, no abrir). |
+| `src/estilo.css` | Estilos. `src/fuentes.css`: fuentes embebidas (base64, no abrir): Titulos y Cuerpo (del juego de referencia), **Maquina** = Courier Prime y **Revista** = Playfair Display itálica (ambas OFL-1.1, Fontsource). Embebidas para que celulares con fuente del sistema personalizada no cambien el diseño. |
 | `src/plantilla.html` | Esqueleto HTML donde `build.js` inyecta CSS y JS. |
 | `tools/build.js` | Construye `index.html`. |
 | `tests/simular.js` | `node tests/simular.js [juegos] [semilla]` → bot de pruebas de reglas. |
@@ -71,7 +71,8 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
 3. Cuando el turno vuelve a quien puso la carta de la mesa, también debe sobreponerse (lectura literal).
 4. No se rebaraja el descarte: si el mazo se agota, nadie roba y llega el cierre por lógica.
 5. Tras un cierre, inicia el siguiente de quien inició la partida anterior.
-6. **Regla de la casa `mesaLimpia`** (NO está en el documento): si el turno vuelve a quien puso la carta de la mesa sin que nadie jugara, se saca una carta nueva del mazo. **Activa por defecto solo en Combos**, porque con la tabla literal ninguna simulación de Combos terminó con ganador (los combos invencibles cierran todas las partidas). Se puede apagar en la configuración. Pendiente: que el usuario confirme.
+6. **`mesaLimpia`**: si el turno vuelve a quien puso la carta de la mesa sin que nadie jugara, se saca una carta nueva del mazo. **Activa por defecto solo en Combos — CONFIRMADO por el usuario** (lo juega así en la vida real y se puede ganar). Sin ella, en simulación nadie gana en Combos. Con ella: partidas con ganador 99 % (2 jug), 88 % (3), 65 % (4), 44 % (5), 15 % (6 jugadores: el mazo de 11 se agota y llega el cierre). Se puede apagar en la configuración.
+8. **Castigo Caos por defecto = `cartas`** (−1/−2/−3, sección PERDER) — CONFIRMADO por el usuario ("todo tal cual el documento"). `fijo` (−3, sinopsis) queda como opción.
 7. Si todos quedan descalificados a la vez, el juego termina sin campeón.
 
 ## 5. Cómo construir y probar
@@ -83,7 +84,7 @@ node tests/ui.js               # interfaz en Chromium (360x740), sin errores de 
 Dentro del juego: Ajustes → **Bot de pruebas** (corre lo mismo en el dispositivo).
 
 ## 6. Datos personales
-El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **no se incluyen en el juego**. Créditos: solo **OneZero** (pedido del usuario).
+El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **no se incluyen en el juego**. Créditos: **OneZero por Infinite Tree** (pedido del usuario).
 
 ## 7. Arquitectura de la interfaz (`src/ui.js`)
 - `G` = sesión: `{ J (estado del motor; null en invitado LAN), vista (solo invitado), locales (asientos humanos de este dispositivo), viendo, cubierto (pasa-el-celular), ultimo (último evento), sel (selección en Combos), red, mapaRed {asiento: idPar} }`.
@@ -114,7 +115,7 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 
 ## 10. Pendientes / ideas
 - **La suerte es el enganche** (decisión del usuario): no reducir el azar; el juego sigue partida tras partida hasta que alguien llega a 10 o queda uno solo.
-- Confirmar con el usuario: (a) `mesaLimpia` en Combos; (b) castigo Caos por defecto (`cartas` vs `fijo`).
+- Combos con 6 jugadores casi siempre termina en cierre (mazo de 11 cartas). Es fiel al documento; si el usuario lo pide, estudiarlo.
 - Probar en celulares reales (cámara/QR, WebRTC en su Wi-Fi, rendimiento).
 - Empaquetar Android con Capacitor: copiar `index.html` a `www/`, `npx cap add android`. Opcional: descubrimiento LAN nativo (NSD) para evitar códigos.
 - Opcional: estadísticas del invitado LAN, reconexión, más idiomas.

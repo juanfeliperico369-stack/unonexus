@@ -35,3 +35,11 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Nuevo: frase "piedra, papel o tijera a nivel elemental y cósmico" en portada; Exportar/Importar datos (probado ida y vuelta); bandera de edición en build (`--edicion=pago|normal`) + gancho de anuncios vacío; versión 1.1 visible en Ajustes.
 - Nuevo: animación de reparto/robo (cartas entran desde el mazo), contador del rival que roba salta, mano ordenada por elemento, destello "¡REY DE REYES!".
 - Probado: UI y LAN OK, exportar/importar OK, 0 errores de consola.
+
+## 2026-11-03 · Pulido 3 (captura del usuario en su Android)
+- Logo: los dibujos se salían del círculo → recompuesto y recortado dentro del contorno.
+- Su celular reemplazaba las fuentes de sistema (máquina de escribir e itálica salían manuscritas) → embebidas Courier Prime ("Maquina") y Playfair Display itálica ("Revista"), OFL. index.html ≈ 330 KB.
+- Símbolos de la página que compartió: se usan los alquímicos de los elementos (🜂 🜄 🜁 🜃) y el Tao ☯, dibujados en SVG (portada, reglas, separadores) y ✦ en subtítulos.
+- Créditos: "Un juego de OneZero por Infinite Tree".
+- Confirmado por el usuario: Combos con mesa limpia activada; castigo Caos según cartas. Todo lo demás tal cual el documento.
+- Botones: el título ya no se parte en dos líneas.

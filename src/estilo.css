@@ -5,7 +5,7 @@
   --fuego:#C42222;--agua:#257CA2;--tierra:#308936;--aire:#A7B7BB;--carbon:#3D3939;--negro:#000;
   --plata:#C0C0C0;--oro:#BFAF5B;
   --fd:"Titulos","Arial Narrow",Impact,sans-serif;--fb:"Cuerpo",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
-  --fm:"Courier New",ui-monospace,Menlo,monospace;--fs:Georgia,"Times New Roman",serif;
+  --fm:"Maquina","Courier New",ui-monospace,monospace;--fs:"Revista",Georgia,"Times New Roman",serif;
   --cw:min(27vw,128px);
 }
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -35,15 +35,16 @@ input,select{font:inherit}
 .lema{font-family:var(--fd);color:var(--petroleo);font-size:1.5rem;line-height:.95;margin:10px 0 4px}
 .pagnum{position:absolute;right:14px;bottom:calc(8px + env(safe-area-inset-bottom));font-family:var(--fm);font-size:.7rem;letter-spacing:.2em;color:var(--gris)}
 h2.tit{font-family:var(--fd);font-size:2.4rem;line-height:.9;margin:8px 0;color:var(--petroleo)}
-h3.tit{font-family:var(--fd);font-size:1.35rem;margin:16px 0 6px;color:var(--rojo);letter-spacing:.02em}
+h3.tit{font:italic 700 1.45rem/1.1 var(--fs);margin:18px 0 6px;color:var(--rojo)}
+h3.tit::before{content:"✦ ";font-style:normal;color:var(--mostaza)}
 .regla{border-top:3px solid var(--tinta);margin:12px 0}
 .pelicula{background:#000;color:var(--mostaza2);padding:18px 14px;position:relative;font-family:var(--fm);font-size:.78rem;letter-spacing:.06em;text-transform:uppercase;line-height:1.45}
 .pelicula::before,.pelicula::after{content:"";position:absolute;left:6px;right:6px;height:7px;background:repeating-linear-gradient(90deg,var(--papel) 0 9px,transparent 9px 19px);opacity:.9}
 .pelicula::before{top:4px}.pelicula::after{bottom:4px}
 .chispa::after{content:" ✦";color:var(--mostaza)}
 /* ---------- botones ---------- */
-.btn{display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:54px;padding:10px 16px;margin:9px 0;border:2.5px solid var(--tinta);background:var(--papel);color:var(--tinta);font-family:var(--fd);font-size:1.35rem;letter-spacing:.03em;text-align:left;box-shadow:5px 5px 0 var(--tinta);transition:transform .08s,box-shadow .08s}
-.btn small{font:600 .68rem var(--fm);letter-spacing:.14em;text-transform:uppercase;opacity:.8}
+.btn{white-space:nowrap;display:flex;align-items:center;justify-content:space-between;gap:10px;width:100%;min-height:54px;padding:10px 16px;margin:9px 0;border:2.5px solid var(--tinta);background:var(--papel);color:var(--tinta);font-family:var(--fd);font-size:1.35rem;letter-spacing:.03em;text-align:left;box-shadow:5px 5px 0 var(--tinta);transition:transform .08s,box-shadow .08s}
+.btn small{font:700 .66rem/1.25 var(--fm);letter-spacing:.12em;text-transform:uppercase;opacity:.85;white-space:normal;text-align:right}
 .btn:active{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--tinta)}
 .btn.rj{background:var(--rojo);color:#fff}.btn.pt{background:var(--petroleo);color:var(--papel)}.btn.ms{background:var(--mostaza)}.btn.ng{background:#000;color:var(--papel)}
 .btn:disabled{opacity:.45;box-shadow:none}
@@ -187,3 +188,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 .rival.robo .n{animation:salta .5s ease-out}
 @keyframes salta{40%{transform:scale(1.7);background:var(--mostaza);color:#000}}
 .flash.corona-f{background:radial-gradient(circle,rgba(201,162,58,.9) 0 30%,rgba(22,74,100,.92) 70%)}
+/* símbolos alquímicos de los elementos (🜂 🜄 🜁 🜃) y el Tao ☯ — dibujados en SVG para que se vean en cualquier celular */
+.alqs{display:flex;gap:10px;align-items:center;margin:6px 0 10px}
+.alqs .alq{width:22px;height:22px}
+.alqs .alq.tao{width:24px;height:24px}
+.alqs::after{content:"";flex:1;height:2px;background:var(--tinta);opacity:.7}
+.vence .alq{width:18px;height:18px;flex:none}
+.sep{display:flex;justify-content:center;gap:14px;margin:16px 0 4px;opacity:.85}
+.sep .alq{width:16px;height:16px}
