@@ -18,6 +18,11 @@
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
+  const VERSION = '1.1';
+  // Edición ('normal' = con anuncios en tiendas, 'pago' = sin anuncios). La fija tools/build.js --edicion=.
+  const EDICION = window.NEXUS_EDICION === 'pago' ? 'pago' : 'normal';
+  // Gancho de anuncios: offline no hace nada. Un envoltorio nativo (Capacitor/AdMob) puede reemplazar entrePartidas.
+  window.NexusAnuncios = window.NexusAnuncios || { edicion: EDICION, entrePartidas() {} };
   const TEXTO_SOLO = 'Tú contra el mazo. Se parte la baraja en dos mitades de 25 (24 sin Caos). Mitad 1: tu mazo auxiliar, de ahí sale la carta inicial y las que robas. Mitad 2: sacas tus 3 cartas y el resto es el mazo rival (22, o 21 sin Caos). El mazo rival sale primero: voltea su carta; si se sobrepone a la mesa la pone, si es repetida (o no se sobrepone) la aparta y sigues tú. Gana quien gaste primero sus 3 cartas: la carta ganadora siempre es la 4ª, 5ª o 6ª de la mesa, contando la inicial.';
 
   // ---------- estado ----------
@@ -79,7 +84,7 @@
     const hay = !!LS.get('partida', null);
     return '<div class="pag portada">' + franja('Nexus Caos · Edición Nº 1', 'Cartas elementales') +
       '<div class="cuerpo"><div class="cabeza"><h1>NEXUS<b>CAOS</b></h1>' + A.logo() + '</div>' +
-      '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Fuego, Tierra, Agua y Aire en un caos del azar: una carta se sobrepone a la otra. ¿Serás el rey de reyes?</p>' +
+      '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
       '<div class="pelicula">4 elementos · 50 cartas · 2 a 12 jugadores · gana quien llegue a 10 · −5 queda fuera</div>' +
       (hay ? '<button class="btn ms" data-a="continuar">Continuar partida <small>guardada</small></button>' : '') +
       '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' +
@@ -166,7 +171,10 @@
       '<button class="chip' + (AJ.reverso === v ? ' on' : '') + '" data-a="reverso" data-v="' + v + '" style="flex-direction:column;padding:6px">' + A.reverso(v, '') .replace('class="carta-svg ', 'style="width:56px;height:80px" class="carta-svg ') + n + '</button>').join('') + '</div>' +
     '<h3 class="tit">Bot de pruebas</h3><p class="nota">Simula partidas en este dispositivo y revisa reglas, puntajes y pantallas buscando errores.</p>' +
     '<button class="btn ms" data-a="autoprueba">Ejecutar bot de pruebas</button>' +
-    '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button></div></div>';
+    '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord y ajustes son tuyos.</p>' +
+    '<div class="fila-btn"><button class="btn" data-a="exportar">Exportar</button><button class="btn" data-a="importar">Importar</button></div><input type="file" id="archivo" accept=".json,application/json" class="oculto">' +
+    '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button>' +
+    '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero</p></div></div>';
 
   // ======================================================================
   // JUEGO (controlador)
@@ -220,7 +228,20 @@
   }
   function pintarMesaSegura() {
     if (pantalla !== 'mesa') return;
-    try { $('#app').innerHTML = mesaHTML(vistaActual()); } catch (e) { console.error(e); aviso('Error al pintar: ' + e.message); }
+    try { const v = vistaActual(); $('#app').innerHTML = mesaHTML(v); marcarNuevas(v); } catch (e) { console.error(e); aviso('Error al pintar: ' + e.message); }
+  }
+  // Animación de reparto/robo: las cartas nuevas de mi mano entran desde el mazo; el contador del rival que robó salta.
+  function marcarNuevas(v) {
+    if (!G) return;
+    const clave = v.np + ':' + v.yo, prev = G.manoPrev && G.manoPrev.k === clave ? G.manoPrev.ids : [];
+    const nuevas = v.mano.filter(c => prev.indexOf(c.id) < 0).map(c => c.id);
+    if (!G.cubierto) G.manoPrev = { k: clave, ids: v.mano.map(c => c.id) };
+    const nPrev = G.nPrev && G.nPrev.np === v.np ? G.nPrev.n : null;
+    G.nPrev = { np: v.np, n: v.jug.map(j => j.n) };
+    if (AJ.quieto || G.cubierto) return;
+    let k = 0;
+    nuevas.forEach(id => { const el = document.querySelector('.mano .c[data-id="' + id + '"]'); if (el) { el.classList.add('nueva'); el.style.animationDelay = (k++ * 90) + 'ms'; } });
+    if (nPrev) v.jug.forEach((j, i) => { if (j.n > nPrev[i]) { const el = document.querySelector('.rival[data-j="' + i + '"]'); if (el) el.classList.add('robo'); } });
   }
   function rectDe(sel) { const el = document.querySelector(sel); return el ? el.getBoundingClientRect() : null; }
   // Aplica una acción (local o anfitrión). quien = asiento que actúa.
@@ -337,7 +358,9 @@
       if (es.length === 1) jugables[es[0]] = 1; else combos.push(es.slice().sort().join('+'));
     });
     const cubierta = G && G.cubierto;
-    const mano = cubierta ? v.mano.map(() => '<div class="c">' + A.reverso(rev) + '</div>').join('') : v.mano.map(c => {
+    const ORD = { fuego: 0, tierra: 1, agua: 2, aire: 3, caos: 4 };
+    const manoOrd = v.mano.slice().sort((a, b) => ORD[a.e] - ORD[b.e] || a.id - b.id);
+    const mano = cubierta ? v.mano.map(() => '<div class="c">' + A.reverso(rev) + '</div>').join('') : manoOrd.map(c => {
       const ok = miTurno && (jugables[c.e] || combos.some(k => k.split('+').indexOf(c.e) >= 0));
       const sel = G && G.sel.indexOf(c.id) >= 0;
       return '<button class="c ' + (miTurno ? (ok ? 'ok' : 'no') : '') + (sel ? ' sel' : '') + '" data-a="carta" data-id="' + c.id + '" aria-label="' + M.NOMBRE[c.e] + '">' + A.carta(c.e) + '</button>';
@@ -448,6 +471,7 @@
     const v = vistaActual();
     const c = v.campeon >= 0 ? v.jug[v.campeon] : null;
     SND.corona();
+    if (!AJ.quieto && c) { const f = document.createElement('div'); f.className = 'flash corona-f'; f.innerHTML = '<div class="grande">¡REY DE REYES!</div>'; document.body.appendChild(f); setTimeout(() => f.remove(), 1700); }
     const orden = v.jug.map((j, i) => ({ j, i })).sort((a, b) => b.j.puntos - a.j.puntos);
     let h = '<div class="franja"><span>Fin del juego</span><span class="der">' + v.np + ' partidas</span></div><div class="cuerpo" style="text-align:center">' + A.logo() .replace('class="logo', 'style="width:110px;height:110px" class="logo') +
       '<p class="maq">El verdadero ganador</p><div class="corona">' + (c ? 'REY DE REYES' : 'SIN CAMPEÓN') + '</div><h2 class="tit">' + (c ? esc(c.nombre) : 'Todos fuera') + '</h2>' +
@@ -665,6 +689,7 @@
       clearTimeout(G.auto); G.np0 = -1;
       cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = [];
       SND.robar(); setTimeout(() => SND.robar(), 120);
+      if (EDICION === 'normal' && G.J.np % 4 === 0) { try { window.NexusAnuncios.entrePartidas(G.J.np); } catch (e) {} }
       if (G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano') { G.viendo = G.J.p.turno; G.cubierto = true; }
       ciclo();
     },
@@ -678,6 +703,32 @@
     vel: b => { AJ.velocidad = b.dataset.v; guardaAJ(); if (pantalla === 'ajustes') pintar(); else menuMesa(); },
     reverso: b => { AJ.reverso = b.dataset.v; guardaAJ(); pintar(); },
     autoprueba: () => autoprueba(),
+    exportar: () => {
+      const d = { juego: 'nexus-caos', v: VERSION, fecha: new Date().toISOString(), datos: {} };
+      ['ajustes', 'stats', 'config', 'partida'].forEach(k => { const x = LS.get(k, null); if (x != null) d.datos[k] = x; });
+      try {
+        const url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' }));
+        const a = document.createElement('a'); a.href = url; a.download = 'nexus-caos-datos.json'; document.body.appendChild(a); a.click(); a.remove();
+        setTimeout(() => URL.revokeObjectURL(url), 2000); aviso('Datos exportados');
+      } catch (e) { aviso('No se pudo exportar: ' + e.message); }
+    },
+    importar: () => {
+      const inp = $('#archivo'); if (!inp) return;
+      inp.onchange = () => {
+        const f = inp.files && inp.files[0]; if (!f) return;
+        const r = new FileReader();
+        r.onload = () => {
+          try {
+            const d = JSON.parse(r.result);
+            if (!d || d.juego !== 'nexus-caos' || typeof d.datos !== 'object') throw new Error('no es un archivo de Nexus Caos');
+            ['ajustes', 'stats', 'config', 'partida'].forEach(k => { if (d.datos[k] != null) LS.set(k, d.datos[k]); });
+            aviso('Datos importados'); setTimeout(() => location.reload(), 600);
+          } catch (e) { aviso('Archivo inválido: ' + e.message); SND.error(); }
+        };
+        r.readAsText(f);
+      };
+      inp.click();
+    },
     borrar: () => { if (!confirm('¿Borrar partida guardada, ajustes y récord?')) return; ['partida', 'ajustes', 'stats', 'config'].forEach(LS.del); location.reload(); },
     // LAN
     crearSala: () => { window.Red.anfitrion(); SALA = { rol: 'anfitrion', modo: 'clasico', asientos: [{ nombre: AJ.nombre, tipo: 'humano' }] }; pintar(); },

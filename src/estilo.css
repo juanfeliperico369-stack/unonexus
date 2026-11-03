@@ -182,3 +182,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 @keyframes late{to{opacity:.55}}
 .creditos{font-family:var(--fm);font-style:normal;text-transform:uppercase;letter-spacing:.2em;font-size:.72rem}
 .creditos b{color:var(--rojo);letter-spacing:.3em}
+.mano .c.nueva{animation:reparte .42s cubic-bezier(.2,.8,.25,1) both}
+@keyframes reparte{from{transform:translate(0,-38vh) scale(.5) rotate(-12deg);opacity:0}}
+.rival.robo .n{animation:salta .5s ease-out}
+@keyframes salta{40%{transform:scale(1.7);background:var(--mostaza);color:#000}}
+.flash.corona-f{background:radial-gradient(circle,rgba(201,162,58,.9) 0 30%,rgba(22,74,100,.92) 70%)}

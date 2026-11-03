@@ -9,6 +9,16 @@ Videojuego de cartas **offline** en **un solo HTML** (`index.html`), con modo **
 Plataformas: web/PC, Android (navegador o empaquetado con Capacitor). Celulares modestos. Sin librerías externas.
 Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de cartas del documento + estilo del juego de referencia del usuario ("INDUSTRY ART", del cual se reutilizan las fuentes embebidas "Titulos" y "Cuerpo").
 
+## 1b. Visión del producto (del usuario, 2026-11-03)
+- "Un juego rápido estilo piedra, papel o tijera desde un nivel elemental y cósmico. Rápido y adictivo." Cartas y estrategia, 2D, vista panorámica.
+- **La suerte es el enganche**: seguir partida tras partida hasta 10 puntos o hasta que quede uno solo.
+- Offline por ahora; **cada jugador es dueño de su partida y sus datos** (todo en el dispositivo; Ajustes → Exportar/Importar).
+- **Edición normal**: todo desbloqueado, con anuncios (Play Store, página oficial, iOS). **Edición de pago**: 3 USD, sin anuncios, todo desbloqueado (Steam, Play Store, Epic, iOS, Microsoft Store, Amazon Games). Donaciones desde la página oficial. Futuro: cartas físicas.
+- Distribución: Steam, Play Store, Epic, página oficial (el juego como página interactiva), descargas directas gratis (Windows, Mac, Linux), posible Facebook Games (como "Uno"). Lanzamiento escalonado.
+- Referencias: piedra-papel-tijera, Uno, los 4 elementos, el Tao (el Caos: agujero negro y agujero blanco).
+- En código: `node tools/build.js --edicion=pago` (sin anuncios) o `--edicion=normal` (por defecto). `window.NexusAnuncios.entrePartidas(np)` es el gancho (cada 4 partidas, solo edición normal); offline no hace nada y un envoltorio nativo (Capacitor + AdMob) debe reemplazarlo. `--salida=ruta` para generar varias ediciones.
+- Empaquetado futuro: Android/iOS con Capacitor; PC/Steam con Electron o Tauri (cargar `index.html`); Facebook Instant Games acepta HTML5 (un solo archivo sirve de base).
+
 ## 2. Archivos
 | Archivo | Para qué |
 |---|---|

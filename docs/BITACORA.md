@@ -29,3 +29,9 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Solitario releído: mitad 1 = mazo auxiliar (inicial + robos); mitad 2 = tus 3 cartas + mazo rival; gana quien gaste primero sus 3 cartas → la ganadora siempre es la 4ª/5ª/6ª de la mesa (verificado por el bot en cada solitario). La mesa muestra "AUXILIAR", "MESA · Nª", "TÚ x/3 · MAZO y/3" y explica "repetida, se aparta · sigues tú".
 - Nuevo: racha (motor `J.racha`), camino a la corona en resultados, avisos de suspenso, "¡ÚLTIMA!" en rivales con 1 carta, siguiente partida automática (6 s, pausable), sonido de barajar, estadísticas del invitado LAN.
 - Probado: simulación 800 juegos (34 casos), UI y LAN: todo OK, 0 errores de consola.
+
+## 2026-11-03 · Pulido 2 + visión de producto
+- Registrada la visión del producto del usuario en GUIA §1b (ediciones normal/pago, tiendas, datos del jugador, referencias).
+- Nuevo: frase "piedra, papel o tijera a nivel elemental y cósmico" en portada; Exportar/Importar datos (probado ida y vuelta); bandera de edición en build (`--edicion=pago|normal`) + gancho de anuncios vacío; versión 1.1 visible en Ajustes.
+- Nuevo: animación de reparto/robo (cartas entran desde el mazo), contador del rival que roba salta, mano ordenada por elemento, destello "¡REY DE REYES!".
+- Probado: UI y LAN OK, exportar/importar OK, 0 errores de consola.
