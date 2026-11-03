@@ -43,3 +43,5 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Créditos: "Un juego de OneZero por Infinite Tree".
 - Confirmado por el usuario: Combos con mesa limpia activada; castigo Caos según cartas. Todo lo demás tal cual el documento.
 - Botones: el título ya no se parte en dos líneas.
+- Nuevo: Marcador en el menú de la mesa (camino a la corona de todos, cartas en mano, racha, quién está en turno). Indicador "pensando…" en el rival en turno.
+- Probado: simulación 500 juegos (34 casos), UI y LAN OK, 0 errores de consola.

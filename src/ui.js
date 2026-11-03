@@ -485,6 +485,7 @@
     const v = vistaActual();
     capa('<div class="franja"><span>Pausa</span><span class="der">' + M.MODOS[v.modo].n + '</span></div><div class="cuerpo"><h2 class="tit">MENÚ</h2>' +
       '<button class="btn ms" data-a="cerrar">Seguir jugando</button>' +
+      (v.modo === 'solitario' ? '' : '<button class="btn" data-a="marcador">Marcador</button>') +
       '<button class="btn" data-a="verVence">Quién vence a quién</button>' +
       '<label class="tg">Sonido<input type="checkbox" data-c="sonido"' + (AJ.sonido ? ' checked' : '') + '></label>' +
       '<span class="campo">Velocidad de los bots</span>' + [['lenta', 'Lenta'], ['normal', 'Normal'], ['rapida', 'Rápida']].map(([x, n]) => '<button class="chip' + (AJ.velocidad === x ? ' on' : '') + '" data-a="vel" data-v="' + x + '">' + n + '</button>').join('') +
@@ -683,6 +684,15 @@
     pasar: () => jugadorActua({ t: 'pasar' }),
     destapar: () => { G.cubierto = false; SND.turno(); pintarMesaSegura(); },
     menuMesa: () => menuMesa(),
+    marcador: () => {
+      const v = vistaActual(), MD = M.MODOS[v.modo], min = MD.desc ? M.DESCALIFICA : 0, rango = M.META - min;
+      const orden = v.jug.map((j, i) => ({ j, i })).sort((a, b) => (a.j.fuera - b.j.fuera) || (b.j.puntos - a.j.puntos));
+      capa('<div class="franja"><span>Marcador</span><span class="der">Partida ' + v.np + '</span></div><div class="cuerpo"><h2 class="tit">CAMINO A LA <span class="rojo">CORONA</span></h2>' +
+        '<table class="res"><tr><th>Jugador</th><th>Cartas</th><th style="text-align:right">Total</th></tr>' + orden.map(o => {
+          const pos = Math.max(0, Math.min(100, (o.j.puntos - min) / rango * 100)), racha = v.racha && v.racha.j === o.i && v.racha.n >= 2 ? ' · racha ×' + v.racha.n : '';
+          return '<tr class="' + (o.j.fuera ? 'fuera' : '') + (o.i === v.turno ? ' gana' : '') + '"><td>' + esc(o.j.nombre) + ' <small>★' + o.j.ganadas + racha + '</small><div class="camino' + (MD.desc ? '' : ' sin-desc') + '"><i style="left:' + pos.toFixed(1) + '%"></i></div></td><td>' + (o.j.fuera ? 'FUERA' : o.j.n) + '</td><td class="tot">' + o.j.puntos + '</td></tr>';
+        }).join('') + '</table><p class="nota">' + (MD.desc ? 'Rojo: zona negativa. En −5 quedas fuera; con 10 eres el rey de reyes.' : 'Gana quien llegue a 10.') + '</p><button class="btn" data-a="menuMesa">Volver</button></div>');
+    },
     verVence: () => capa('<div class="cuerpo"><h2 class="tit">QUIÉN VENCE</h2>' + tablaVence() + '<button class="btn" data-a="cerrar">Volver</button></div>'),
     pausaAuto: () => { if (G) { clearTimeout(G.auto); G.np0 = -1; } const b = $('#btnSig'); if (b) b.textContent = 'Siguiente partida'; const pz = $('#btnPausa'); if (pz) pz.remove(); },
     siguiente: () => {
