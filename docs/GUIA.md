@@ -74,3 +74,31 @@ Dentro del juego: Ajustes → **Bot de pruebas** (corre lo mismo en el dispositi
 
 ## 6. Datos personales
 El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **no se incluyen en el juego**. Solo nombres en créditos.
+
+## 7. Arquitectura de la interfaz (`src/ui.js`)
+- `G` = sesión: `{ J (estado del motor; null en invitado LAN), vista (solo invitado), locales (asientos humanos de este dispositivo), viendo, cubierto (pasa-el-celular), ultimo (último evento), sel (selección en Combos), red, mapaRed {asiento: idPar} }`.
+- `ciclo()` tras cada cambio: guarda, difunde vistas (anfitrión), pinta la mesa y programa al bot (`IA.elegir`) con demora según velocidad.
+- `hacer(accion, asiento)` = única puerta para cambiar el estado (valida con `Motor.aplicar`). Los invitados mandan `{t:'accion'}` y el anfitrión llama `hacer`.
+- La mesa se pinta completa desde `Motor.vista(J, asiento)` (no ve manos ajenas). Animación FLIP solo de la carta jugada.
+- `VISTAS.*` devuelven HTML; `ACC.*` son los botones (`data-a`). Guardado en `localStorage` con prefijo `nexus.` (ajustes, stats, config, partida).
+
+## 8. LAN (`src/red.js`, `src/qr.js`)
+1. Anfitrión: Modo LAN → Crear sala → «+ Invitar» (un código/QR por invitado).
+2. Invitado: Unirme → escanea (cámara, si hay `BarcodeDetector`) o pega el código → muestra su respuesta.
+3. Anfitrión escanea/pega la respuesta → el invitado aparece en la sala → Empezar.
+- Mensajes: invitado→anfitrión `hola{nombre}`, `accion{a}`, `chao`; anfitrión→invitado `vista{v,ev}`, `error{e}`, `chao`.
+- `iceServers: []` → solo red local (sin STUN/TURN ni internet). Los navegadores ocultan la IP local con nombres mDNS (`*.local`); en algunas redes que bloquean multicast la conexión puede fallar → usar el punto de acceso de un celular.
+- Si un invitado se va durante el juego, un bot Normal toma su asiento. Si se va el anfitrión, los invitados vuelven al menú.
+- Hay un gancho previsto para Android nativo (NSD) si se empaqueta con Capacitor (como en el juego de referencia); no está implementado.
+
+## 9. Pruebas (todas pasan al 2026-11-03)
+- `node tests/simular.js 1500 11`: 31 casos de reglas + 1500 juegos (13 203 partidas, 209 014 acciones, 31 079 acciones inválidas rechazadas), 0 errores.
+- `node tests/ui.js`: 360x740 táctil; juego clásico completo hasta campeón, Combos con 2 humanos, Solitario, Familiar, continuar, pantallas sin desbordamiento horizontal, bot interno, 0 errores de consola.
+- `node tests/lan.js`: dos navegadores, conexión por código, juego completo sincronizado, desconexión → bot.
+- QR validado con un decodificador externo (jsQR, solo para la prueba; no va en el juego).
+
+## 10. Pendientes / ideas
+- Confirmar con el usuario: (a) `mesaLimpia` en Combos; (b) castigo Caos por defecto (`cartas` vs `fijo`); (c) en Solitario, ganar = poner 3 cartas.
+- Probar en celulares reales (cámara/QR, WebRTC en su Wi-Fi, rendimiento).
+- Empaquetar Android con Capacitor: copiar `index.html` a `www/`, `npx cap add android`. Opcional: descubrimiento LAN nativo (NSD) para evitar códigos.
+- Opcional: estadísticas del invitado LAN, reconexión, más idiomas.

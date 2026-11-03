@@ -162,11 +162,30 @@ label.tg input{width:24px;height:24px;accent-color:var(--rojo)}
 .codigo{width:100%;min-height:84px;font:.72rem/1.3 var(--fm);word-break:break-all;border:2px solid var(--tinta);background:#fffdf6;padding:8px;color:var(--tinta);-webkit-user-select:text;user-select:text}
 video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 @media (min-width:700px){.vence{grid-template-columns:1fr 1fr}.acc .btn{font-size:1.25rem}}
+.abajo{flex:none}
+@media (min-width:900px) and (min-height:700px){
+  :root{--cw:150px}
+  .mano{--mw:132px}.mano.muchas{--mw:min(calc((100vw - 40px) / var(--n)),118px)}
+  .rival{min-width:98px}
+}
 @media (orientation:landscape) and (max-height:520px){
-  :root{--cw:min(17vh*1.2,96px)}
-  .mano{--mw:min(19vh,86px)}
-  .rivales{padding:4px 8px}.rival .abanico{height:26px}.rival .abanico .carta-svg{width:16px;height:23px}
+  :root{--cw:min(25vh,84px)}
+  .mesa{display:grid;grid-template-columns:1.15fr 1fr;grid-template-rows:auto auto minmax(0,1fr)}
+  .msup,.rivales{grid-column:1/3}
+  .msup{padding-top:max(2px,env(safe-area-inset-top))}
+  .centro{grid-column:1;grid-row:3;gap:5px;padding:2px 6px}
+  .abajo{grid-column:2;grid-row:3;display:flex;flex-direction:column;justify-content:center;min-height:0}
+  .mano,.mano.muchas{--mw:min(27vh,calc((48vw - 30px) / var(--n)),92px);min-height:0;gap:4px}
+  .mano .c.ok{transform:translateY(-6px)}.mano .c.sel{transform:translateY(-12px)}
+  .rivales{padding:3px 8px;gap:5px}.rival{min-width:62px;padding:3px 4px}
+  .rival .abanico{height:22px}.rival .abanico .carta-svg{width:15px;height:21px;margin:0 -5px}
+  .rival .est{display:none}
+  .cartel{font-size:.62rem;padding:9px 8px;min-height:0}
+  .pista{font-size:.78rem;min-height:0}
   .historia{display:none}
+  .mazo .cnt,.pila .cnt{bottom:-9px;font-size:.58rem}
+  .acc{min-height:0;padding:4px 6px max(6px,env(safe-area-inset-bottom))}.acc .btn{min-height:42px;font-size:1rem}
+  .yo{padding:2px 8px}
 }
 </style>
 </head>
@@ -1696,9 +1715,9 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       '<div class="rivales">' + rivales + '</div>' +
       '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">MESA</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
-      '<div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
+      '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
       '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + v.mano.length + '">' + mano + '</div>' +
-      '<div class="acc">' + acc + '</div></div>' +
+      '<div class="acc">' + acc + '</div></div></div>' +
       (cubierta ? '<div class="cubre">' + A.logo() + '<p class="maq">Pasa el dispositivo a</p><h2>' + esc(yoJ.nombre) + '</h2><button class="btn ms" style="max-width:320px" data-a="destapar">Soy ' + esc(yoJ.nombre) + ': ver mis cartas</button></div>' : '');
   }
   function seleccionValida(v) {

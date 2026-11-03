@@ -361,9 +361,9 @@
       '<div class="rivales">' + rivales + '</div>' +
       '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">MESA</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
-      '<div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
+      '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
       '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + v.mano.length + '">' + mano + '</div>' +
-      '<div class="acc">' + acc + '</div></div>' +
+      '<div class="acc">' + acc + '</div></div></div>' +
       (cubierta ? '<div class="cubre">' + A.logo() + '<p class="maq">Pasa el dispositivo a</p><h2>' + esc(yoJ.nombre) + '</h2><button class="btn ms" style="max-width:320px" data-a="destapar">Soy ' + esc(yoJ.nombre) + ': ver mis cartas</button></div>' : '');
   }
   function seleccionValida(v) {
