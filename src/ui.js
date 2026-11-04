@@ -18,7 +18,7 @@
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.1';
+  const VERSION = '1.2';
   // Edición ('normal' = con anuncios en tiendas, 'pago' = sin anuncios). La fija tools/build.js --edicion=.
   const EDICION = window.NEXUS_EDICION === 'pago' ? 'pago' : 'normal';
   // Gancho de anuncios: offline no hace nada. Un envoltorio nativo (Capacitor/AdMob) puede reemplazar entrePartidas.
@@ -172,10 +172,16 @@
       '<button class="chip' + (AJ.reverso === v ? ' on' : '') + '" data-a="reverso" data-v="' + v + '" style="flex-direction:column;padding:6px">' + A.reverso(v, '') .replace('class="carta-svg ', 'style="width:56px;height:80px" class="carta-svg ') + n + '</button>').join('') + '</div>' +
     '<h3 class="tit">Bot de pruebas</h3><p class="nota">Simula partidas en este dispositivo y revisa reglas, puntajes y pantallas buscando errores.</p>' +
     '<button class="btn ms" data-a="autoprueba">Ejecutar bot de pruebas</button>' +
-    '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord y ajustes son tuyos.</p>' +
+    '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord, historial y ajustes son tuyos. Exporta para guardar una copia o pasarla a otro dispositivo.</p>' + historialHTML() +
     '<div class="fila-btn"><button class="btn" data-a="exportar">Exportar</button><button class="btn" data-a="importar">Importar</button></div><input type="file" id="archivo" accept=".json,application/json" class="oculto">' +
     '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button>' +
     '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero por Infinite Tree</p></div></div>';
+
+  function historialHTML() {
+    const h = LS.get('historial', []);
+    if (!h.length) return '<p class="maq">Historial · aún no hay juegos terminados</p>';
+    return '<table class="res"><tr><th>Fecha</th><th>Modo</th><th>Campeón</th></tr>' + h.slice(0, 5).map(x => '<tr><td>' + esc(String(x.fecha).slice(0, 10)) + '</td><td>' + esc((M.MODOS[x.modo] || {}).n || x.modo) + '</td><td>' + esc(x.campeon || '—') + ' <small>(' + x.partidas + ' p.)</small></td></tr>').join('') + '</table><p class="maq">Historial · ' + h.length + ' juegos guardados</p>';
+  }
 
   // ======================================================================
   // JUEGO (controlador)
@@ -303,6 +309,14 @@
     if (loc.indexOf(f.ganador) >= 0) { ST.ganadas++; if (f.tipo === 'caos') ST.caos++; }
     if (J.terminado && loc.indexOf(J.campeon) >= 0) ST.coronas++;
     guardaST();
+    if (J.terminado) registrarHistorial(M.vista(J, -1));
+  }
+  // Historial de juegos terminados (se guarda en el dispositivo y se exporta con tus datos)
+  function registrarHistorial(v) {
+    const h = LS.get('historial', []);
+    h.unshift({ fecha: new Date().toISOString(), modo: v.modo, partidas: v.np, campeon: v.campeon >= 0 ? v.jug[v.campeon].nombre : null, lan: !!(G && G.red),
+      jugadores: v.jug.map(j => ({ nombre: j.nombre, tipo: j.tipo, puntos: j.puntos, ganadas: j.ganadas, fuera: j.fuera })) });
+    LS.set('historial', h.slice(0, 100));
   }
 
   // ---------- texto del cartel ----------
@@ -541,26 +555,42 @@
   let SALA = null; // { rol, asientos:[{nombre,tipo,nivel,par}], modo }
   VISTAS.lan = () => {
     const R = window.Red, disp = R && R.disponible();
-    let h = '<div class="pag">' + franja('Modo LAN', 'Sin internet') + '<div class="cuerpo"><h2 class="tit">JUGAR EN LA <span class="rojo">MISMA WI-FI</span></h2>' +
-      '<p class="ital">Todos conectados a la misma red Wi-Fi (o al punto de acceso de un celular). No necesita internet ni servidor.</p>';
-    if (!disp) return h + '<div class="caja roja">Este navegador no permite conexiones directas (WebRTC). Prueba con Chrome, Edge o Firefox actualizados.</div><button class="btn" data-a="inicio">Volver</button></div></div>';
+    const bt = R && R.btDisponible();
+    let h = '<div class="pag">' + franja('Multijugador', 'Sin internet') + '<div class="cuerpo"><h2 class="tit">JUGAR EN <span class="rojo">RED LOCAL</span></h2>' +
+      '<p class="ital">Wi-Fi (o el punto de acceso de un celular) o Bluetooth. No necesita internet ni servidor.</p>';
+    if (!disp && !bt) return h + '<div class="caja roja">Este navegador no permite conexiones directas (WebRTC). Prueba con Chrome, Edge o Firefox actualizados.</div><button class="btn" data-a="inicio">Volver</button></div></div>';
     if (!SALA) {
-      h += '<button class="btn rj" data-a="crearSala">Crear sala <small>soy el anfitrión</small></button>' +
+      h += '<h3 class="tit">Wi-Fi</h3>' +
+        (disp ? '<button class="btn rj" data-a="crearSala">Crear sala <small>soy el anfitrión</small></button>' +
         '<button class="btn pt" data-a="unirme">Unirme <small>tengo un código</small></button>' +
-        '<div class="pelicula">1 · El anfitrión crea la sala e invita · 2 · El invitado escanea o pega el código · 3 · El invitado muestra su respuesta · 4 · El anfitrión la escanea o pega · ¡Listo!</div>';
+        '<div class="pelicula">1 · El anfitrión crea la sala e invita · 2 · El invitado escanea o pega el código · 3 · El invitado muestra su respuesta · 4 · El anfitrión la escanea o pega · ¡Listo!</div>' : '<p class="nota">Este navegador no admite Wi-Fi directo (WebRTC).</p>');
+      h += '<h3 class="tit">Bluetooth</h3>';
+      if (bt) h += '<button class="btn ms" data-a="crearSalaBT">Crear sala Bluetooth <small>anfitrión</small></button><button class="btn ng" data-a="unirmeBT">Unirme por Bluetooth <small>celulares emparejados</small></button>' +
+        '<p class="nota">Antes, empareja los celulares en Ajustes del sistema → Bluetooth. Hasta 7 invitados por Bluetooth.</p>';
+      else h += '<div class="caja">El modo Bluetooth funciona en la <b>app Android (APK)</b>. Los navegadores no permiten conectar dos celulares por Bluetooth.<br><i>Alternativa en el navegador:</i> en el celular anfitrión activa «Compartir Internet por Bluetooth» (anclaje Bluetooth), conecta el otro celular a esa red y usa la sección Wi-Fi.</div>';
     } else if (SALA.rol === 'anfitrion') {
       const MD = M.MODOS[SALA.modo];
       h += '<span class="campo">Modo</span>' + [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos']].map(([k, n]) => '<button class="chip' + (SALA.modo === k ? ' on' : '') + '" data-a="salaModo" data-v="' + k + '">' + n + '</button>').join('');
       h += '<span class="campo">Asientos (' + SALA.asientos.length + ' de ' + MD.min + '–' + MD.max + ')</span>';
       h += SALA.asientos.map((s, i) => '<div class="asiento" style="grid-template-columns:1fr auto"><span><b>' + esc(s.nombre) + '</b> <small class="maq">' + (i === 0 ? 'anfitrión' : s.tipo === 'red' ? (R.estado(s.par) || 'conectado') : 'bot ' + NIVEL[s.nivel]) + '</small></span>' +
         (i === 0 ? '<span></span>' : '<button class="mini-btn" data-a="salaQuitar" data-i="' + i + '">✕</button>') + '</div>').join('');
-      h += '<div class="fila-btn"><button class="btn ms" data-a="invitar"' + (SALA.asientos.length >= MD.max ? ' disabled' : '') + '>+ Invitar</button><button class="btn" data-a="salaBot"' + (SALA.asientos.length >= MD.max ? ' disabled' : '') + '>+ Bot</button></div>';
+      h += '<div class="fila-btn"><button class="btn ms" data-a="invitar"' + (SALA.asientos.length >= MD.max || !disp ? ' disabled' : '') + '>+ Invitar Wi-Fi</button><button class="btn" data-a="salaBot"' + (SALA.asientos.length >= MD.max ? ' disabled' : '') + '>+ Bot</button></div>';
+      if (SALA.bt) h += '<div class="pelicula">Bluetooth: ' + esc(SALA.btEstado || 'sala abierta') + ' · los invitados emparejados tocan «Unirme por Bluetooth»</div>';
+      else if (bt) h += '<button class="btn" data-a="abrirBT">Abrir también por Bluetooth</button>';
       h += '<button class="btn rj" data-a="salaEmpezar"' + (SALA.asientos.length < MD.min ? ' disabled' : '') + '>Empezar</button>';
     } else {
       h += '<div class="pelicula">' + esc(SALA.estado || 'Conectando…') + '</div><p class="nota">Cuando el anfitrión empiece, la mesa aparecerá sola.</p>';
     }
     return h + '<button class="btn" data-a="lanSalir">' + (SALA ? 'Salir de la sala' : 'Volver') + '</button></div></div>';
   };
+  function btListo() {
+    const R = window.Red; if (!R || !R.btDisponible()) { aviso('Bluetooth solo en la app Android'); return false; }
+    const e = R.btEstado();
+    if (e === 'sin-permiso') { R.btPedirPermiso(); aviso('Concede el permiso de Bluetooth y vuelve a tocar'); return false; }
+    if (e === 'apagado') { R.btActivar(); aviso('Activa el Bluetooth y vuelve a tocar'); return false; }
+    if (e !== 'ok') { aviso('Este dispositivo no tiene Bluetooth'); return false; }
+    return true;
+  }
   function codigoHTML(cod, titulo, texto) {
     const qr = window.QR ? window.QR.svg(cod) : '';
     return '<h2 class="tit">' + titulo + '</h2><p class="nota">' + texto + '</p>' + (qr ? qr.replace('<svg', '<svg class="qr"') : '') +
@@ -611,12 +641,15 @@
             if (f.ganador === o.v.yo) { ST.ganadas++; if (f.tipo === 'caos') ST.caos++; }
             if (o.v.terminado && o.v.campeon === o.v.yo) ST.coronas++;
             guardaST();
+            if (o.v.terminado) registrarHistorial(o.v);
           }
           if (o.v.terminado && o.v.fase === 'fin') { /* el campeón se ve desde el resumen */ }
         } else if (o.t === 'error') { aviso(o.e); SND.error(); }
         else if (o.t === 'sala' && SALA) { SALA.estado = o.texto; if (pantalla === 'lan') pintar(); }
       }
     });
+    R.on('error', (id, t) => { aviso(t || 'Error de conexión'); SND.error(); if (R.rol !== 'anfitrion' && SALA && !(G && G.vista)) { SALA.estado = t || 'Error de conexión'; if (pantalla === 'lan') pintar(); } });
+    R.on('btsala', (id, t) => { if (SALA) { SALA.btEstado = t === 'abierta' ? 'sala abierta' : 'sala cerrada'; if (pantalla === 'lan') pintar(); } });
     R.on('desconectado', id => {
       if (R.rol === 'anfitrion') {
         if (SALA) SALA.asientos = SALA.asientos.filter(s => s.par !== id || (G && G.J));
@@ -716,10 +749,12 @@
     autoprueba: () => autoprueba(),
     exportar: () => {
       const d = { juego: 'nexus-caos', v: VERSION, fecha: new Date().toISOString(), datos: {} };
-      ['ajustes', 'stats', 'config', 'partida'].forEach(k => { const x = LS.get(k, null); if (x != null) d.datos[k] = x; });
+      ['ajustes', 'stats', 'config', 'partida', 'historial'].forEach(k => { const x = LS.get(k, null); if (x != null) d.datos[k] = x; });
+      const nombre = 'nexus-caos-datos-' + d.fecha.slice(0, 10) + '.json';
+      if (window.AndroidApp && window.AndroidApp.exportar) { try { aviso('Guardado en ' + window.AndroidApp.exportar(nombre, JSON.stringify(d))); } catch (e) { aviso('No se pudo exportar: ' + e.message); } return; }
       try {
         const url = URL.createObjectURL(new Blob([JSON.stringify(d)], { type: 'application/json' }));
-        const a = document.createElement('a'); a.href = url; a.download = 'nexus-caos-datos.json'; document.body.appendChild(a); a.click(); a.remove();
+        const a = document.createElement('a'); a.href = url; a.download = nombre; document.body.appendChild(a); a.click(); a.remove();
         setTimeout(() => URL.revokeObjectURL(url), 2000); aviso('Datos exportados');
       } catch (e) { aviso('No se pudo exportar: ' + e.message); }
     },
@@ -732,7 +767,7 @@
           try {
             const d = JSON.parse(r.result);
             if (!d || d.juego !== 'nexus-caos' || typeof d.datos !== 'object') throw new Error('no es un archivo de Nexus Caos');
-            ['ajustes', 'stats', 'config', 'partida'].forEach(k => { if (d.datos[k] != null) LS.set(k, d.datos[k]); });
+            ['ajustes', 'stats', 'config', 'partida', 'historial'].forEach(k => { if (d.datos[k] != null) LS.set(k, d.datos[k]); });
             aviso('Datos importados'); setTimeout(() => location.reload(), 600);
           } catch (e) { aviso('Archivo inválido: ' + e.message); SND.error(); }
         };
@@ -787,6 +822,17 @@
       const jug = SALA.asientos.map((s, i) => { if (s.tipo === 'red') mapa[i] = s.par; return { nombre: s.nombre, tipo: s.tipo, nivel: s.nivel || 2 }; });
       try { iniciar({ modo: SALA.modo, jugadores: jug, dir: 0 }, 'anfitrion', { mapaRed: mapa, asientoLocal: 0 }); } catch (e) { aviso(e.message); }
     },
+    crearSalaBT: () => { if (!btListo()) return; ACC.crearSala(); ACC.abrirBT(); },
+    abrirBT: () => { if (!btListo() || !SALA) return; window.Red.btAbrirSala(); SALA.bt = true; SALA.btEstado = 'abriendo…'; pintar(); },
+    unirmeBT: () => {
+      if (!btListo()) return;
+      const lista = window.Red.btEmparejados();
+      capa('<div class="cuerpo"><h2 class="tit">UNIRME POR <span class="rojo">BLUETOOTH</span></h2><p class="nota">Elige el celular del anfitrión (debe haber tocado «Crear sala Bluetooth»).</p>' +
+        (lista.length ? lista.map(d => '<button class="btn" data-a="btUnir" data-mac="' + esc(d.mac) + '" data-n="' + esc(d.nombre || d.mac) + '">' + esc(d.nombre || 'Sin nombre') + ' <small>' + esc(d.mac) + '</small></button>').join('')
+          : '<div class="caja roja">No hay celulares emparejados. Emparéjalos en Ajustes del sistema → Bluetooth y vuelve aquí.</div>') +
+        '<button class="btn" data-a="cerrar">Cancelar</button></div>');
+    },
+    btUnir: b => { redEventos(); SALA = { rol: 'invitado', estado: 'Conectando por Bluetooth con ' + b.dataset.n + '…' }; window.Red.btUnirse(b.dataset.mac); cerrarCapa(); pintar(); },
     lanSalir: () => { if (window.Red) window.Red.salir(); SALA = null; ir('inicio'); }
   };
   document.addEventListener('click', e => {
@@ -815,6 +861,13 @@
     if (!$('#aviso')) { const a = document.createElement('div'); a.id = 'aviso'; a.setAttribute('role', 'status'); document.body.appendChild(a); }
     pintar();
   }
+  // Botón "atrás" de Android (lo llama la app nativa): true = manejado.
+  window.NexusAtras = () => {
+    if ($('#capa')) { cerrarCapa(); return true; }
+    if (pantalla === 'mesa') { menuMesa(); return true; }
+    if (pantalla !== 'inicio') { ACC[pantalla === 'lan' ? 'lanSalir' : 'inicio'](); return true; }
+    return false;
+  };
   window.NexusUI = { ir, iniciar, vistaActual, get G() { return G; }, ACC, autoprueba, VISTAS };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
 })();

@@ -119,3 +119,25 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 - Probar en celulares reales (cámara/QR, WebRTC en su Wi-Fi, rendimiento).
 - Empaquetar Android con Capacitor: copiar `index.html` a `www/`, `npx cap add android`. Opcional: descubrimiento LAN nativo (NSD) para evitar códigos.
 - Opcional: estadísticas del invitado LAN, reconexión, más idiomas.
+
+## 11. Publicación web (GitHub Pages) — v1.2.0
+- Enlace: **https://juanfeliperico369-stack.github.io/unonexus/** (repo público `unonexus`, rama **`gh-pages`**, raíz, con `.nojekyll`).
+- `node tools/build.js --web` genera `dist/web/`: `index.html` (con manifest, apple-touch-icon como archivo, favicon, Open Graph con og:image/og:url absolutas), `manifest.webmanifest` (start_url "./", standalone, íconos 192/512 + maskable 512), `sw.js` (caché `nexus-caos-v<versión>-<edición>`; navegación red-primero con respaldo sin conexión; borra cachés viejas del juego), íconos y `compartir.png` 1200×630.
+- Los íconos y la imagen para compartir salen de `node tools/iconos.js` (Playwright renderiza el arte SVG) → `web/` y `android/res/`.
+- Publicar: copiar `dist/web/` a la rama `gh-pages` y empujar (GitHub activó Pages solo al recibir la rama). **Para una versión nueva, subir `VERSION` en `tools/build.js`** (cambia el nombre de caché y fuerza la actualización).
+- Verificación: `node tests/pwa.js <url>` → carga, service worker activo y controlando, sin errores de instalabilidad (CDP `Page.getInstallabilityErrors`), manifest válido, etiquetas, íconos 200, abre y se juega sin conexión. Pasó en el enlace publicado el 2026-11-04.
+- iPhone: abrir en Safari → Compartir → "Añadir a pantalla de inicio".
+
+## 12. APK Android (sin Gradle) — v1.2.0
+- Proyecto en `android/` (manifest, tema, íconos adaptativos, Java). Paquete `com.infinitetree.nexuscaos`, minSdk 24, targetSdk 35.
+- `MainActivity`: WebView con `assets/index.html`; insets de borde a borde (Android 15); permiso de cámara para el QR; selector de archivos (Importar); botón atrás → `window.NexusAtras()`; al pausar guarda la partida.
+- Puentes JS: `AndroidApp.exportar(nombre, json)` (guarda en Descargas) y **`AndroidBT`** (Bluetooth).
+- Construir: `ANDROID_BT=<build-tools 35> ANDROID_JAR=<platform-35/android.jar> NEXUS_KS=<keystore> NEXUS_KS_PASS=<clave> bash tools/apk.sh` → `dist/NexusCaos-<versión>.apk` (firma v2+v3). Build-tools y plataforma se bajan de dl.google.com (`build-tools_r35.0.1_linux.zip`, `platform-35_r02.zip`).
+- **Keystore**: NO está en el repo (es público). Se entregó al usuario en privado (`nexus-caos.jks`, alias `nexuscaos`). Sin él no se pueden publicar actualizaciones de la misma app.
+
+## 13. Bluetooth
+- Solo en la APK: Bluetooth clásico RFCOMM entre **celulares emparejados** (se emparejan en Ajustes del sistema). UUID `6e657875-732d-6361-6f73-4e5843303031`. El anfitrión abre sala (servidor, varias conexiones, hasta ~7); el invitado elige al anfitrión de su lista de emparejados. Una línea de JSON por mensaje.
+- JS: `Red.btAbrirSala/btUnirse/btEmparejados/btEstado` en `src/red.js`; Java llama `BTNativo.evento(tipo, id, dato)`. Mismo protocolo que LAN (`hola`, `accion`, `vista`, `chao`), así que se pueden mezclar invitados Wi-Fi y Bluetooth.
+- Navegador: los navegadores no permiten conectar dos teléfonos por Bluetooth (Web Bluetooth solo es cliente BLE). Alternativa mostrada: anclaje Bluetooth (compartir internet por Bluetooth) + modo Wi-Fi.
+- Prueba: `node tests/bt.js` simula el puente nativo en dos páginas (sala, conexión, juego completo, puntos sincronizados). **El radio Bluetooth real no se pudo probar aquí** (sin dispositivos).
+- Historial de juegos terminados en `localStorage` (`nexus.historial`, 100 máx.), se ve en Ajustes y se exporta con los datos.

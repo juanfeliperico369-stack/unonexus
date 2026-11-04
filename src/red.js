@@ -41,7 +41,8 @@
     const P = Red.pares[id]; if (!P || P.estado === 'cerrado') return;
     const estaba = P.estado === 'conectado';
     P.estado = 'cerrado';
-    try { P.dc && P.dc.close(); P.pc.close(); } catch (e) {}
+    if (P.bt) { try { raiz.AndroidBT.cerrar(P.nid); } catch (e) {} }
+    else { try { P.dc && P.dc.close(); P.pc.close(); } catch (e) {} }
     delete Red.pares[id];
     if (estaba) emitir('desconectado', id);
   }
@@ -86,12 +87,44 @@
     await esperarICE(pc);
     return comprimir({ n: 'nexus', r: 'resp', id: o.id, sdp: limpiarSDP(pc.localDescription.sdp) });
   };
-  const mandar = (P, msg) => { if (P && P.dc && P.dc.readyState === 'open') { try { P.dc.send(JSON.stringify(msg)); return true; } catch (e) {} } return false; };
+  const mandar = (P, msg) => {
+    if (P && P.bt && P.estado === 'conectado') { try { raiz.AndroidBT.enviar(P.nid, JSON.stringify(msg)); return true; } catch (e) { return false; } }
+    if (P && P.dc && P.dc.readyState === 'open') { try { P.dc.send(JSON.stringify(msg)); return true; } catch (e) {} }
+    return false;
+  };
   Red.enviar = msg => mandar(Red.pares.h, msg);
   Red.enviarA = (id, msg) => mandar(Red.pares[id], msg);
   Red.estado = id => (Red.pares[id] || {}).estado || 'desconectado';
   Red.cerrar = id => caer(id);
-  Red.salir = () => { Object.keys(Red.pares).forEach(id => { const P = Red.pares[id]; if (P) { P.estado = 'cerrado'; try { P.dc && P.dc.close(); P.pc.close(); } catch (e) {} } delete Red.pares[id]; }); Red.rol = null; };
+  Red.salir = () => {
+    Object.keys(Red.pares).forEach(id => {
+      const P = Red.pares[id];
+      if (P) { P.estado = 'cerrado'; try { if (P.bt) raiz.AndroidBT.cerrar(P.nid); else { P.dc && P.dc.close(); P.pc.close(); } } catch (e) {} }
+      delete Red.pares[id];
+    });
+    if (Red.btSala) { Red.btSala = false; try { raiz.AndroidBT.salir(); } catch (e) {} }
+    Red.rol = null;
+  };
+  // ---------- Bluetooth (solo en la app Android: puente nativo AndroidBT con RFCOMM, celulares emparejados) ----------
+  // Los navegadores no permiten que dos teléfonos se conecten entre sí por Bluetooth (Web Bluetooth solo es cliente BLE).
+  Red.btDisponible = () => !!raiz.AndroidBT;
+  Red.btEstado = () => { try { return raiz.AndroidBT.estado(); } catch (e) { return 'no'; } }; // ok | apagado | sin-permiso | no
+  Red.btPedirPermiso = () => { try { raiz.AndroidBT.pedirPermiso(); } catch (e) {} };
+  Red.btActivar = () => { try { raiz.AndroidBT.activar(); } catch (e) {} };
+  Red.btEmparejados = () => { try { return JSON.parse(raiz.AndroidBT.emparejados() || '[]'); } catch (e) { return []; } };
+  Red.btAbrirSala = () => { if (Red.rol !== 'anfitrion') Red.anfitrion(); Red.btSala = true; raiz.AndroidBT.abrirSala(); };
+  Red.btUnirse = mac => { Red.salir(); Red.rol = 'invitado'; Red.pares.h = { bt: true, nid: '', estado: 'uniendo' }; raiz.AndroidBT.unirse(mac); };
+  // Eventos que manda Java: BTNativo.evento(tipo, idNativo, dato)
+  raiz.BTNativo = {
+    evento(tipo, nid, dato) {
+      const id = Red.rol === 'invitado' ? 'h' : nid;
+      if (tipo === 'conectado') { Red.pares[id] = Object.assign(Red.pares[id] || {}, { bt: true, nid, estado: 'conectado' }); emitir('conectado', id); }
+      else if (tipo === 'mensaje') { let o; try { o = JSON.parse(dato); } catch (e) { return; } if (o && o.t === 'chao') { caer(id); return; } emitir('mensaje', id, o); }
+      else if (tipo === 'desconectado') { const P = Red.pares[id]; if (P && P.estado === 'uniendo') { delete Red.pares[id]; emitir('error', id, 'No se pudo conectar por Bluetooth'); } else caer(id); }
+      else if (tipo === 'error') emitir('error', id, dato);
+      else if (tipo === 'sala') emitir('btsala', id, dato);
+    }
+  };
   // Avisar al otro lado al cerrar la pestaña/app (si no, WebRTC tarda varios segundos en notarlo).
   if (raiz.addEventListener) raiz.addEventListener('pagehide', () => { Object.keys(Red.pares).forEach(id => mandar(Red.pares[id], { t: 'chao' })); });
   Red._abrir = abrir; Red._comprimir = comprimir;

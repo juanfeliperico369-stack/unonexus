@@ -45,3 +45,12 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Botones: el título ya no se parte en dos líneas.
 - Nuevo: Marcador en el menú de la mesa (camino a la corona de todos, cartas en mano, racha, quién está en turno). Indicador "pensando…" en el rival en turno.
 - Probado: simulación 500 juegos (34 casos), UI y LAN OK, 0 errores de consola.
+
+## 2026-11-04 · v1.2.0: Bluetooth, GitHub Pages (PWA) y APK
+- Bluetooth: puente nativo RFCOMM en la APK (`PuenteBT.java`) + transporte en `red.js` + pantalla Multijugador (Wi-Fi y Bluetooth). En navegador se explica la alternativa por anclaje Bluetooth. Probado con puente simulado (`tests/bt.js`): OK.
+- Web: build `--web` con manifest, service worker (`nexus-caos-v1.2.0-normal`), íconos 192/512/maskable, apple-touch-icon 180 sin transparencia, favicon, Open Graph + `compartir.png` 1200×630. Publicado en rama `gh-pages` → https://juanfeliperico369-stack.github.io/unonexus/
+- Verificado en el enlace publicado (`tests/pwa.js`): carga, SW activo y controlando, 0 errores de instalabilidad, manifest válido, abre y se juega sin conexión, 0 errores de consola.
+- APK `dist/NexusCaos-1.2.0.apk` (329 KB, firma v2+v3) construida sin Gradle (`tools/apk.sh`). Keystore entregado al usuario en privado, fuera del repo.
+- Historial de juegos + exportar (incluye historial). Botón atrás de Android. Versión 1.2.
+- Pruebas: reglas (34 casos + 400 juegos), UI, LAN, Bluetooth simulado, PWA publicada: todo OK.
+- Falta: probar APK y Bluetooth en celulares reales.

@@ -1,13 +1,18 @@
 {
   "name": "nexus-caos",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "private": true,
   "description": "NEXUS CAOS: juego de cartas elementales offline en un solo HTML, con modo LAN",
   "scripts": {
     "build": "node tools/build.js",
-    "test": "node tools/build.js && node tests/simular.js 400 1 && node tests/ui.js && node tests/lan.js",
+    "test": "node tools/build.js && node tests/simular.js 400 1 && node tests/ui.js && node tests/lan.js && node tests/bt.js",
     "test:reglas": "node tests/simular.js 1500 1",
     "test:ui": "node tests/ui.js",
-    "test:lan": "node tests/lan.js"
+    "test:lan": "node tests/lan.js",
+    "test:bt": "node tests/bt.js",
+    "web": "node tools/build.js --web",
+    "test:pwa": "node tests/pwa.js https://juanfeliperico369-stack.github.io/unonexus/",
+    "iconos": "node tools/iconos.js",
+    "apk": "bash tools/apk.sh"
   }
 }
