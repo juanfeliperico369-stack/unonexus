@@ -54,3 +54,6 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Historial de juegos + exportar (incluye historial). Botón atrás de Android. Versión 1.2.
 - Pruebas: reglas (34 casos + 400 juegos), UI, LAN, Bluetooth simulado, PWA publicada: todo OK.
 - Falta: probar APK y Bluetooth en celulares reales.
+
+## 2026-11-04 · Sugerencias
+- Creado `docs/SUGERENCIAS.md` con sugerencias priorizadas (pedido del usuario).

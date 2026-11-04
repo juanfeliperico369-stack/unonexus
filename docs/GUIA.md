@@ -141,3 +141,6 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 - Navegador: los navegadores no permiten conectar dos teléfonos por Bluetooth (Web Bluetooth solo es cliente BLE). Alternativa mostrada: anclaje Bluetooth (compartir internet por Bluetooth) + modo Wi-Fi.
 - Prueba: `node tests/bt.js` simula el puente nativo en dos páginas (sala, conexión, juego completo, puntos sincronizados). **El radio Bluetooth real no se pudo probar aquí** (sin dispositivos).
 - Historial de juegos terminados en `localStorage` (`nexus.historial`, 100 máx.), se ve en Ajustes y se exporta con los datos.
+
+## 14. Sugerencias
+Ver `docs/SUGERENCIAS.md` (juego, reglas del libro físico, lanzamiento, anuncios, legal, técnico).
