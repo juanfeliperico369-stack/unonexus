@@ -57,3 +57,8 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 
 ## 2026-11-04 · Sugerencias
 - Creado `docs/SUGERENCIAS.md` con sugerencias priorizadas (pedido del usuario).
+
+## 2026-11-05 · v1.3.0: reto del día, anotador, logros, personalidades
+- Motor: `puntuarPartida()` puro (refactor de `finPartida`, validado por el oráculo independiente del bot de pruebas).
+- Nuevo `src/extras.js`: Reto del día compartible, Anotador para las cartas físicas, 16 logros y frases de los bots. Exportar ahora incluye anotador, logros y reto. APK: compartir con el menú de Android.
+- Probado: reglas (34 casos y 400 juegos), interfaz, LAN, Bluetooth simulado y extras: todo OK y 0 errores de consola. Publicado en gh-pages (caché `nexus-caos-v1.3.0-normal`). APK `NexusCaos-1.3.0.apk` firmada con la misma llave.

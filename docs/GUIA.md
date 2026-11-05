@@ -144,3 +144,11 @@ El documento incluye cédulas, teléfonos y fotos de documentos de identidad: **
 
 ## 14. Sugerencias
 Ver `docs/SUGERENCIAS.md` (juego, reglas del libro físico, lanzamiento, anuncios, legal, técnico).
+
+## 15. v1.3.0 — Extras (`src/extras.js`)
+- Se engancha a `ui.js` por `window.NexusUI`: `on('evento'|'finPartida'|'finJuego'|'continuar')`, `VISTAS`, `ACC`, `EXTRA.inicio1/inicio2/frase/campeon`. El motor expone `puntuarPartida()` (puntaje puro, lo usan `finPartida` y el Anotador).
+- **Reto del día**: semilla = fecha (FNV-1a de `nexus-caos-AAAA-MM-DD`), clásico, tú contra Ígnea, Marea y Céfiro (Normal), IA con azar sembrado. Reto #1 = 2026-11-04. Cuenta el primer juego terminado del día; después solo práctica. Resultado con cuadritos por partida (🟩 ganaste, 🌀 con Caos, 🟨 sin cambio, 🟥 perdiste, ⬛ Caos rival, 💀 fuera) para compartir por WhatsApp (`navigator.share`, `AndroidApp.compartir` o `wa.me`). Racha de días en `nexus.retoRacha`.
+- **Anotador** de cartas físicas (`nexus.anotador`): modos Clásico, Familiar y Combos; ganador o cierre, con o sin Caos, cartas que le quedaron a cada uno y quién tiene la otra Caos. Calcula puntos, descalificados, campeón, quién reparte y quién inicia. Botón para deshacer la última partida.
+- **Logros** (16, `nexus.logros`): no desbloquean nada (todo está desbloqueado por diseño).
+- **Personalidades**: cada bot tiene un elemento y frases (Caos, última carta, gana, queda fuera) en globos sobre su ficha y en los resultados.
+- Pruebas: `node tests/extras.js` (mismas barajas en dos dispositivos, reto completo, texto para compartir, anotador con Caos/descalificación/deshacer, logros, frases).

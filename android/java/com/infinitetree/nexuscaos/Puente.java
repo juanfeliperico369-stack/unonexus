@@ -37,5 +37,15 @@ public class Puente {
     }
 
     @JavascriptInterface
+    public void compartir(String texto) {
+        act.runOnUiThread(() -> {
+            android.content.Intent i = new android.content.Intent(android.content.Intent.ACTION_SEND);
+            i.setType("text/plain");
+            i.putExtra(android.content.Intent.EXTRA_TEXT, texto);
+            act.startActivity(android.content.Intent.createChooser(i, "Compartir resultado"));
+        });
+    }
+
+    @JavascriptInterface
     public String version() { return BuildConfigNexus.VERSION; }
 }

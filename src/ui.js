@@ -14,11 +14,17 @@
   const ST = Object.assign({ partidas: 0, ganadas: 0, coronas: 0, caos: 0, soloG: 0, soloP: 0 }, LS.get('stats', {}));
   const guardaAJ = () => { LS.set('ajustes', AJ); SND.activo = AJ.sonido; SND.vibrar = AJ.vibrar; document.body.classList.toggle('quieto', !!AJ.quieto); };
   const guardaST = () => LS.set('stats', ST);
+  const CLAVES_DATOS = ['ajustes', 'stats', 'config', 'partida', 'historial', 'anotador', 'logros', 'reto', 'retoRacha'];
   const NOM = e => (M.NOMBRE[e] || '').toUpperCase();
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.2';
+  const VERSION = '1.3';
+  // Ganchos para src/extras.js (reto del día, anotador, logros, personalidades)
+  const HOOKS = {};
+  const on = (e, f) => { (HOOKS[e] = HOOKS[e] || []).push(f); };
+  const disparar = (e, ...a) => (HOOKS[e] || []).forEach(f => { try { f(...a); } catch (er) { console.error(er); } });
+  const EXTRA = { inicio1: () => '', inicio2: () => '', frase: () => '', campeon: () => '' };
   // Edición ('normal' = con anuncios en tiendas, 'pago' = sin anuncios). La fija tools/build.js --edicion=.
   const EDICION = window.NEXUS_EDICION === 'pago' ? 'pago' : 'normal';
   // Gancho de anuncios: offline no hace nada. Un envoltorio nativo (Capacitor/AdMob) puede reemplazar entrePartidas.
@@ -87,10 +93,10 @@
       A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
       '<div class="pelicula">4 elementos · 50 cartas · 2 a 12 jugadores · gana quien llegue a 10 · −5 queda fuera</div>' +
       (hay ? '<button class="btn ms" data-a="continuar">Continuar partida <small>guardada</small></button>' : '') +
-      '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' +
+      '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' + EXTRA.inicio1() +
       '<button class="btn pt" data-a="nueva">Nueva partida <small>modos y jugadores</small></button>' +
       '<button class="btn ng" data-a="lan">Modo LAN <small>Wi-Fi sin internet</small></button>' +
-      '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
+      EXTRA.inicio2() + '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
       '<p class="maq" style="margin-top:14px">Récord · ' + ST.ganadas + ' partidas ganadas · ' + ST.coronas + ' coronas · ' + ST.caos + ' caos</p>' +
       '<div class="sep" aria-hidden="true">' + ['fuego', 'agua', 'aire', 'tierra', 'tao'].map(e => A.alq(e)).join('') + '</div>' +
       '<p class="nota creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p>' +
@@ -208,7 +214,7 @@
   function guardar() {
     if (!G || !G.J || G.red) return;
     if (G.J.terminado && G.J.p.fase === 'fin') LS.del('partida');
-    else LS.set('partida', { J: G.J, locales: G.locales, viendo: G.viendo, cfg: G.cfg });
+    else LS.set('partida', { J: G.J, locales: G.locales, viendo: G.viendo, cfg: G.cfg, reto: G.reto || null });
   }
   function ciclo() {
     if (!G) return;
@@ -230,7 +236,7 @@
       if (!G.cubierto) SND.turno();
     } else {
       pintarMesaSegura();
-      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J); if (a) hacer(a, p.turno); }, demora());
+      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J, G.rngIA); if (a) hacer(a, p.turno); }, demora());
     }
   }
   function pintarMesaSegura() {
@@ -262,6 +268,8 @@
       return r;
     }
     G.ultimo = r.ev; G.sel = [];
+    if (r.ev.t === 'jugar' && (G.red ? quien === (G.asientoLocal || 0) : G.locales.indexOf(quien) >= 0)) { G.jugados = G.jugados || {}; elemsJugada(r.ev.jugada).forEach(e => { G.jugados[e] = 1; }); }
+    disparar('evento', r.ev, M.vista(G.J, -1));
     efectos(r.ev);
     ciclo();
     animar(r.ev, r.ev.t === 'jugar' ? origen : null);
@@ -304,12 +312,15 @@
     G.contado = J.np;
     const f = J.p.fin, loc = G.red ? [G.asientoLocal || 0] : G.locales;
     if (!loc.length) return;
-    if (J.modo === 'solitario') { if (f.ganador === 0) ST.soloG++; else if (f.ganador === 1) ST.soloP++; guardaST(); return; }
+    const datos = { v: M.vista(J, loc[0]), locales: loc, red: !!G.red, jugados: G.jugados || {}, G };
+    if (J.modo === 'solitario') { if (f.ganador === 0) ST.soloG++; else if (f.ganador === 1) ST.soloP++; guardaST(); disparar('finPartida', datos); return; }
     ST.partidas++;
     if (loc.indexOf(f.ganador) >= 0) { ST.ganadas++; if (f.tipo === 'caos') ST.caos++; }
     if (J.terminado && loc.indexOf(J.campeon) >= 0) ST.coronas++;
     guardaST();
     if (J.terminado) registrarHistorial(M.vista(J, -1));
+    disparar('finPartida', datos);
+    if (J.terminado) disparar('finJuego', datos);
   }
   // Historial de juegos terminados (se guarda en el dispositivo y se exporta con tus datos)
   function registrarHistorial(v) {
@@ -354,7 +365,8 @@
       const est = esMazo ? 'PUESTAS ' + v.rival.puestas + '/3 · APARTADAS ' + v.rival.apartadas : (j.fuera ? 'FUERA' : '★' + j.ganadas + racha + (j.tipo === 'bot' ? ' · ' + NIVEL[j.nivel] : j.tipo === 'red' ? ' · LAN' : ''));
       const ultima = !esMazo && !j.fuera && j.n === 1 && v.fase !== 'fin';
       return '<div class="rival' + (v.turno === i && v.fase !== 'fin' ? ' turno' : '') + (j.fuera ? ' fuera' : '') + (ultima ? ' ultima' : '') + '" data-j="' + i + '">' + (ultima ? '<span class="aviso1">¡ÚLTIMA!</span>' : '') + '<span class="n">' + cnt + '</span><div class="abanico">' + fan + '</div>' +
-        '<div class="nm">' + esc(j.nombre) + '</div>' + (esMazo ? '' : '<div class="pt' + (j.puntos < 0 ? ' neg' : '') + '">' + j.puntos + '</div>') + '<div class="est">' + est + '</div></div>';
+        '<div class="nm">' + esc(j.nombre) + '</div>' + (esMazo ? '' : '<div class="pt' + (j.puntos < 0 ? ' neg' : '') + '">' + j.puntos + '</div>') + '<div class="est">' + est + '</div>' +
+        (G && G.globos && G.globos[i] && G.globos[i].hasta > Date.now() ? '<span class="globo">' + esc(G.globos[i].t) + '</span>' : '') + '</div>';
     }).join('');
     // historia (jugadas anteriores)
     const hist = v.mesa.slice(0, -1).slice(-6).map(m => elemsJugada(m).map(e => A.carta(e)).join('')).join('');
@@ -433,6 +445,7 @@
     if (localGana) SND.ganar(); else SND.perder();
     let h = '<div class="franja"><span>Partida ' + v.np + '</span><span class="der">' + MD.n + '</span></div><div class="cuerpo">';
     h += '<h2 class="tit">' + tit + '</h2>';
+    h += EXTRA.frase(v);
     if (f.racha >= 2 && gn) h += '<p class="maq rojo">Racha ×' + f.racha + ': ' + esc(gn.nombre) + ' gana ' + f.racha + ' partidas seguidas</p>';
     if (f.tipo === 'cierre') h += '<p class="nota">Nadie pudo jugar ni robar en una vuelta completa: no hay ganador y se castiga por cartas.</p>';
     if (v.modo === 'solitario') {
@@ -491,6 +504,7 @@
     let h = '<div class="franja"><span>Fin del juego</span><span class="der">' + v.np + ' partidas</span></div><div class="cuerpo" style="text-align:center">' + A.logo() .replace('class="logo', 'style="width:110px;height:110px" class="logo') +
       '<p class="maq">El verdadero ganador</p><div class="corona">' + (c ? 'REY DE REYES' : 'SIN CAMPEÓN') + '</div><h2 class="tit">' + (c ? esc(c.nombre) : 'Todos fuera') + '</h2>' +
       '<table class="res">' + orden.map(o => '<tr class="' + (o.i === v.campeon ? 'gana' : '') + (o.j.fuera ? ' fuera' : '') + '"><td>' + esc(o.j.nombre) + '</td><td>★' + o.j.ganadas + '</td><td class="tot">' + o.j.puntos + '</td></tr>').join('') + '</table>';
+    h += EXTRA.campeon(v);
     if (G.J) h += '<button class="btn rj" data-a="revancha">Revancha</button>';
     h += '<button class="btn" data-a="salir">Inicio</button></div>';
     capa(h);
@@ -524,7 +538,7 @@
       // pantallas
       const errUI = [];
       const guardaP = pantalla, guardaG = G;
-      ['inicio', 'nueva', 'reglas', 'ajustes', 'lan'].forEach(p => { try { const h = VISTAS[p](); if (!h || h.length < 100) errUI.push('Pantalla vacía: ' + p); } catch (e) { errUI.push(p + ': ' + e.message); } });
+      ['inicio', 'nueva', 'reglas', 'ajustes', 'lan', 'reto', 'anotador', 'logros'].filter(p => VISTAS[p]).forEach(p => { try { const h = VISTAS[p](); if (!h || h.length < 100) errUI.push('Pantalla vacía: ' + p); } catch (e) { errUI.push(p + ': ' + e.message); } });
       ['clasico', 'familiar', 'combos', 'solitario'].forEach(modo => {
         try {
           const MD = M.MODOS[modo], js = [{ nombre: 'Yo', tipo: 'humano' }];
@@ -627,7 +641,10 @@
         if (o.t === 'vista') {
           if (!G || G.J) { G = { J: null, vista: null, locales: [], viendo: 0, sel: [], ultimo: null, red: 'invitado' }; pantalla = 'mesa'; cerrarCapa(); }
           const antes = G.vista;
+          if (antes && antes.np !== o.v.np) G.jugados = {};
           G.vista = o.v; G.ultimo = o.ev; G.viendo = o.v.yo; G.sel = [];
+          if (o.ev && o.ev.t === 'jugar' && o.ev.p === o.v.yo) { G.jugados = G.jugados || {}; elemsJugada(o.ev.jugada).forEach(e => { G.jugados[e] = 1; }); }
+          if (o.ev && (!antes || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.fase !== o.v.fase)) disparar('evento', o.ev, o.v);
           const nuevo = !antes || antes.np !== o.v.np || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.turno !== o.v.turno || antes.fase !== o.v.fase;
           if (nuevo && o.ev && (!antes || antes.fase !== 'fin' || o.v.fase !== 'fin')) efectos(o.ev);
           const origen = o.ev && o.ev.t === 'jugar' ? (o.ev.p === o.v.yo ? G.rectPend : rectDe('.rival[data-j="' + o.ev.p + '"]')) : null;
@@ -642,6 +659,9 @@
             if (o.v.terminado && o.v.campeon === o.v.yo) ST.coronas++;
             guardaST();
             if (o.v.terminado) registrarHistorial(o.v);
+            const datos = { v: o.v, locales: [o.v.yo], red: true, jugados: G.jugados || {}, G };
+            disparar('finPartida', datos);
+            if (o.v.terminado) disparar('finJuego', datos);
           }
           if (o.v.terminado && o.v.fase === 'fin') { /* el campeón se ve desde el resumen */ }
         } else if (o.t === 'error') { aviso(o.e); SND.error(); }
@@ -676,7 +696,8 @@
     rapida: () => iniciar({ modo: 'clasico', jugadores: [{ nombre: AJ.nombre, tipo: 'humano' }, { nombre: 'Ígnea', tipo: 'bot', nivel: 2 }, { nombre: 'Marea', tipo: 'bot', nivel: 2 }, { nombre: 'Céfiro', tipo: 'bot', nivel: 2 }], dir: 0 }),
     continuar: () => {
       const s = LS.get('partida', null); if (!s || !s.J) { aviso('No hay partida guardada'); return; }
-      G = { J: s.J, locales: s.locales || [0], viendo: s.viendo || 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: null, contado: s.J.p.fase === 'fin' ? s.J.np : 0, cfg: s.cfg };
+      G = { J: s.J, locales: s.locales || [0], viendo: s.viendo || 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: null, contado: s.J.p.fase === 'fin' ? s.J.np : 0, cfg: s.cfg, reto: s.reto || null, jugados: {} };
+      disparar('continuar', G);
       G.cubierto = G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano';
       if (G.cubierto) G.viendo = G.J.p.turno;
       pantalla = 'mesa'; ciclo();
@@ -731,7 +752,7 @@
     siguiente: () => {
       if (!G || !G.J || G.J.p.fase !== 'fin' || G.J.terminado) return;
       clearTimeout(G.auto); G.np0 = -1;
-      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = [];
+      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = []; G.jugados = {};
       SND.robar(); setTimeout(() => SND.robar(), 120);
       if (EDICION === 'normal' && G.J.np % 4 === 0) { try { window.NexusAnuncios.entrePartidas(G.J.np); } catch (e) {} }
       if (G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano') { G.viendo = G.J.p.turno; G.cubierto = true; }
@@ -749,7 +770,7 @@
     autoprueba: () => autoprueba(),
     exportar: () => {
       const d = { juego: 'nexus-caos', v: VERSION, fecha: new Date().toISOString(), datos: {} };
-      ['ajustes', 'stats', 'config', 'partida', 'historial'].forEach(k => { const x = LS.get(k, null); if (x != null) d.datos[k] = x; });
+      CLAVES_DATOS.forEach(k => { const x = LS.get(k, null); if (x != null) d.datos[k] = x; });
       const nombre = 'nexus-caos-datos-' + d.fecha.slice(0, 10) + '.json';
       if (window.AndroidApp && window.AndroidApp.exportar) { try { aviso('Guardado en ' + window.AndroidApp.exportar(nombre, JSON.stringify(d))); } catch (e) { aviso('No se pudo exportar: ' + e.message); } return; }
       try {
@@ -767,7 +788,7 @@
           try {
             const d = JSON.parse(r.result);
             if (!d || d.juego !== 'nexus-caos' || typeof d.datos !== 'object') throw new Error('no es un archivo de Nexus Caos');
-            ['ajustes', 'stats', 'config', 'partida', 'historial'].forEach(k => { if (d.datos[k] != null) LS.set(k, d.datos[k]); });
+            CLAVES_DATOS.forEach(k => { if (d.datos[k] != null) LS.set(k, d.datos[k]); });
             aviso('Datos importados'); setTimeout(() => location.reload(), 600);
           } catch (e) { aviso('Archivo inválido: ' + e.message); SND.error(); }
         };
@@ -775,7 +796,7 @@
       };
       inp.click();
     },
-    borrar: () => { if (!confirm('¿Borrar partida guardada, ajustes y récord?')) return; ['partida', 'ajustes', 'stats', 'config'].forEach(LS.del); location.reload(); },
+    borrar: () => { if (!confirm('¿Borrar partida guardada, ajustes y récord?')) return; CLAVES_DATOS.forEach(LS.del); location.reload(); },
     // LAN
     crearSala: () => { window.Red.anfitrion(); SALA = { rol: 'anfitrion', modo: 'clasico', asientos: [{ nombre: AJ.nombre, tipo: 'humano' }] }; pintar(); },
     unirme: () => { SALA = { rol: 'invitado', estado: 'Escanea o pega el código del anfitrión' }; pintar(); capa('<div class="cuerpo"><h2 class="tit">UNIRME</h2><p class="nota">Pide al anfitrión que toque «+ Invitar» y te muestre su código.</p>' + lectorHTML('responder') + '<button class="btn" data-a="cerrar">Cancelar</button></div>'); },
@@ -868,6 +889,7 @@
     if (pantalla !== 'inicio') { ACC[pantalla === 'lan' ? 'lanSalir' : 'inicio'](); return true; }
     return false;
   };
-  window.NexusUI = { ir, iniciar, vistaActual, get G() { return G; }, ACC, autoprueba, VISTAS };
+  window.NexusUI = { ir, iniciar, vistaActual, get G() { return G; }, get pantalla() { return pantalla; }, ACC, autoprueba, VISTAS,
+    LS, AJ, ST, guardaST, capa, cerrarCapa, aviso, esc, pintar, franja, on, disparar, pintarMesaSegura, EXTRA, SND, URL_JUEGO: 'https://juanfeliperico369-stack.github.io/unonexus/' };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
 })();

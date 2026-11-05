@@ -307,49 +307,55 @@
     return n >= 2 ? -(n - 1) : 0; // clásico: 1→0, 2→-1, 3→-2
   }
 
+  // Puntaje de una partida (función pura). La usan finPartida y el Anotador de cartas físicas.
+  // js: [{ puntos, fuera, n: cartas en mano, caos: tiene la otra carta Caos }]
+  function puntuarPartida(modo, castigoCaos, tipo, g, js) {
+    const MD = MODOS[modo];
+    const delta = js.map((j, i) => {
+      if (j.fuera) return 0;
+      if (i === g) return tipo === 'caos' ? 5 : 2;
+      if (tipo === 'caos') return j.caos ? 0 : (castigoCaos === 'fijo' ? -3 : -j.n); // se salva quien tenga la otra Caos
+      return castigo(modo, j.n);
+    });
+    const puntos = js.map((j, i) => {
+      if (j.fuera) return j.puntos;
+      let q = j.puntos + delta[i];
+      if (MD.piso && q < 0) { delta[i] -= q; q = 0; }
+      return q;
+    });
+    let reparte = -1, peor = 1; // reparte el que más perdió (regla Extra 1)
+    js.forEach((j, i) => { if (!j.fuera && delta[i] < peor) { peor = delta[i]; reparte = i; } });
+    const fuera = [];
+    if (MD.desc) js.forEach((j, i) => { if (!j.fuera && puntos[i] <= DESCALIFICA) fuera.push(i); });
+    const sigue = i => !js[i].fuera && fuera.indexOf(i) < 0;
+    let campeon = -1;
+    js.forEach((j, i) => { if (sigue(i) && puntos[i] >= META) campeon = i; });
+    const act = js.map((j, i) => i).filter(sigue);
+    if (campeon < 0 && act.length === 1) campeon = act[0];
+    if (reparte >= 0 && !sigue(reparte)) reparte = -1;
+    return { delta, puntos, fuera, campeon, terminado: campeon >= 0 || act.length <= 1, reparte };
+  }
+
   function finPartida(J, tipo, g) {
     const p = J.p, M = MODOS[J.modo];
-    const delta = J.jug.map(() => 0), manos = J.jug.map(j => j.mano.length);
+    const manos = J.jug.map(j => j.mano.length);
     const cartas = J.jug.map(j => j.mano.map(c => c.e));
     p.fase = 'fin';
     const r = J.racha || (J.racha = { j: -1, n: 0 });
     if (g >= 0) { if (r.j === g) r.n++; else { r.j = g; r.n = 1; } } else { r.j = -1; r.n = 0; }
     if (J.modo === 'solitario') {
       if (g >= 0) J.jug[g].ganadas++;
-      p.fin = { tipo, ganador: g, delta, manos, cartas, fuera: [], reparte: -1, mesaN: p.mesa.length, racha: r.n };
+      p.fin = { tipo, ganador: g, delta: J.jug.map(() => 0), manos, cartas, fuera: [], reparte: -1, mesaN: p.mesa.length, racha: r.n };
       return;
     }
-    J.jug.forEach((j, i) => {
-      if (j.fuera) return;
-      const n = j.mano.length;
-      if (i === g) { delta[i] = tipo === 'caos' ? 5 : 2; return; }
-      if (tipo === 'caos') {
-        // Se salva quien tenga la segunda carta Caos (no gana ni pierde).
-        if (j.mano.some(c => c.e === 'caos')) delta[i] = 0;
-        else delta[i] = J.cfg.castigoCaos === 'fijo' ? -3 : -n;
-        return;
-      }
-      delta[i] = castigo(J.modo, n);
-    });
-    J.jug.forEach((j, i) => {
-      if (j.fuera) return;
-      j.puntos += delta[i];
-      if (M.piso && j.puntos < 0) { delta[i] -= j.puntos; j.puntos = 0; }
-    });
+    const R = puntuarPartida(J.modo, J.cfg.castigoCaos, tipo, g, J.jug.map(j => ({ puntos: j.puntos, fuera: j.fuera, n: j.mano.length, caos: j.mano.some(c => c.e === 'caos') })));
+    J.jug.forEach((j, i) => { j.puntos = R.puntos[i]; });
     if (g >= 0) J.jug[g].ganadas++;
-    // reparte: el que más perdió (cosmético, regla Extra 1)
-    let reparte = -1, peor = 1;
-    J.jug.forEach((j, i) => { if (!j.fuera && delta[i] < peor) { peor = delta[i]; reparte = i; } });
-    const fuera = [];
-    if (M.desc) J.jug.forEach((j, i) => { if (!j.fuera && j.puntos <= DESCALIFICA) { j.fuera = true; fuera.push(i); } });
-    let campeon = -1;
-    J.jug.forEach((j, i) => { if (!j.fuera && j.puntos >= META) campeon = i; });
-    const act = activos(J);
-    if (campeon < 0 && act.length === 1) campeon = act[0];
-    if (campeon >= 0 || act.length <= 1) { J.terminado = true; J.campeon = campeon; }
+    R.fuera.forEach(i => { J.jug[i].fuera = true; });
+    if (R.terminado) { J.terminado = true; J.campeon = R.campeon; }
     // Inicia la próxima: el ganador (mantiene su racha). Sin ganador: el siguiente de quien inició.
     if (!J.terminado) J.inicia = (g >= 0 && !J.jug[g].fuera) ? g : siguiente(J, J.inicia);
-    if (reparte >= 0 && J.jug[reparte].fuera) reparte = -1;
+    const delta = R.delta, fuera = R.fuera, reparte = R.reparte;
     p.fin = { tipo, ganador: g, delta, manos, cartas, fuera, reparte, mesaN: p.mesa.length, racha: r.n };
   }
 
@@ -401,7 +407,7 @@
   const Motor = {
     ELEM, NOMBRE, VENCE, COMBOS, COMBO_DE, MODOS, META, DESCALIFICA,
     crearJuego, nuevaPartida, acciones, esValida, aplicar, vista, verificar,
-    cima, siguiente, activos, formarJugada, vence, jugadasValidas, castigo, crearMazo, rnd
+    cima, siguiente, activos, formarJugada, vence, jugadasValidas, castigo, puntuarPartida, crearMazo, rnd
   };
   raiz.Motor = Motor;
   if (typeof module !== 'undefined' && module.exports) module.exports = Motor;

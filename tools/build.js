@@ -7,9 +7,9 @@
 const fs = require('fs'), path = require('path');
 const R = path.join(__dirname, '..'), src = f => path.join(R, 'src', f);
 const leer = f => fs.readFileSync(src(f), 'utf8');
-const VERSION = '1.2.0';
+const VERSION = '1.3.0';
 const URL_WEB = 'https://juanfeliperico369-stack.github.io/unonexus/';
-const ORDEN = ['motor.js', 'ia.js', 'prueba.js', 'arte.js', 'sonido.js', 'qr.js', 'red.js', 'ui.js'];
+const ORDEN = ['motor.js', 'ia.js', 'prueba.js', 'arte.js', 'sonido.js', 'qr.js', 'red.js', 'ui.js', 'extras.js'];
 const opt = k => { const a = process.argv.find(x => x.startsWith('--' + k + '=')); return a ? a.split('=').slice(1).join('=') : null; };
 const web = process.argv.includes('--web'), android = process.argv.includes('--android');
 const edicion = opt('edicion') === 'pago' ? 'pago' : 'normal';
