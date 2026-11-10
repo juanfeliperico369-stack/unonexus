@@ -5,7 +5,7 @@
 set -euo pipefail
 R=$(cd "$(dirname "$0")/.." && pwd)
 BT=${ANDROID_BT:?Falta ANDROID_BT}; JAR=${ANDROID_JAR:?Falta ANDROID_JAR}; KS=${NEXUS_KS:?Falta NEXUS_KS}
-VERSION=1.3.0; CODE=4
+VERSION=1.4.0; CODE=5
 B=$R/dist/apk-build; rm -rf "$B"; mkdir -p "$B/gen/com/infinitetree/nexuscaos" "$B/classes" "$B/dex" "$B/assets"
 node "$R/tools/build.js" --android --salida="$B/assets/index.html"
 "$BT/aapt2" compile --dir "$R/android/res" -o "$B/res.zip"

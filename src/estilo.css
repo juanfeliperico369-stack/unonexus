@@ -216,3 +216,4 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 .anota b{display:block;font-family:var(--fd);font-size:1.05rem}
 .anota .chip{min-width:44px;justify-content:center}
 @media (min-width:700px){.logros{grid-template-columns:1fr 1fr}}
+.mano.muchas{flex-wrap:wrap;align-content:flex-end;row-gap:6px}

@@ -113,10 +113,16 @@
       return mejor;
     }
     const robos = acc.filter(a => a.t === 'robar');
-    if (robos.length) return nivel <= 1 ? robos[Math.floor(r() * robos.length)] : robos[0]; // roba lo mínimo
+    if (robos.length) {
+      if (nivel <= 1 || robos.length === 1) return robos[Math.floor(r() * robos.length)];
+      if (nivel >= 3) return elegirMC(J, robos, r, IA.iteraciones); // Difícil: simula robar 1 o 2
+      return robos[IA.roboNormal(J, i)]; // Normal: heurística
+    }
     return acc.find(a => a.t === 'pasar') || acc[0];
   }
-  const IA = { elegir, puntuar, desconocidas, iteraciones: 24 };
+  // Normal: con 1 carta en mano roba 2 (más opciones para salir); si no, roba 1 (menos castigo si pierde).
+  function roboNormal(J, i) { return J.jug[i].mano.length <= 1 ? 1 : 0; }
+  const IA = { elegir, puntuar, desconocidas, roboNormal, iteraciones: 24 };
   raiz.IA = IA;
   if (typeof module !== 'undefined' && module.exports) module.exports = IA;
 })(typeof window !== 'undefined' ? window : globalThis);

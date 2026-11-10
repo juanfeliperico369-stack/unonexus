@@ -266,7 +266,7 @@
       h += '<span class="campo">Cartas que le quedaron a cada uno</span>';
       act.filter(i => i !== FORM.g).forEach(i => {
         h += '<div class="anota"><b>' + esc(T.jug[i].nombre) + '</b><div>';
-        for (let n = 1; n <= MD.tope; n++) h += '<button class="chip' + (FORM.n[i] === n ? ' on' : '') + '" data-a="anN" data-i="' + i + '" data-v="' + n + '">' + n + '</button>';
+        for (let n = 1; n <= (Number.isFinite(MD.tope) ? MD.tope : 8); n++) h += '<button class="chip' + (FORM.n[i] === n ? ' on' : '') + '" data-a="anN" data-i="' + i + '" data-v="' + n + '">' + n + '</button>';
         if (FORM.caos) h += '<button class="chip' + (FORM.otra === i ? ' on' : '') + '" data-a="anOtra" data-i="' + i + '">Tiene la otra Caos</button>';
         h += '</div></div>';
       });

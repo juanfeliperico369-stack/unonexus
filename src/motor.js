@@ -25,12 +25,13 @@
   const COMBO_DE = {};
   for (const k in COMBOS) COMBO_DE[COMBOS[k].e.slice().sort().join('+')] = k;
 
-  // mano: cartas al repartir · tope: máximo en mano · desc: descalifica en -5 · piso: marcador no baja de 0
+  // mano: cartas al repartir · tope: máximo en mano (Infinity = sin tope: se reparten 3, pero al robar 1 o 2 se pasa de 3)
+  // desc: descalifica en -5 · piso: marcador no baja de 0
   const MODOS = {
-    clasico: { n: 'Clásico', min: 2, max: 12, mano: 3, tope: 3, caos: true, combos: false, desc: true, piso: false },
-    familiar: { n: 'Familiar y niños', min: 2, max: 12, mano: 3, tope: 3, caos: false, combos: false, desc: false, piso: true },
+    clasico: { n: 'Clásico', min: 2, max: 12, mano: 3, tope: Infinity, caos: true, combos: false, desc: true, piso: false },
+    familiar: { n: 'Familiar y niños', min: 2, max: 12, mano: 3, tope: Infinity, caos: false, combos: false, desc: false, piso: true },
     combos: { n: 'Combos', min: 2, max: 6, mano: 6, tope: 9, caos: false, combos: true, desc: true, piso: false },
-    solitario: { n: 'Solitario', min: 1, max: 1, mano: 3, tope: 3, caos: true, combos: false, desc: false, piso: false }
+    solitario: { n: 'Solitario', min: 1, max: 1, mano: 3, tope: Infinity, caos: true, combos: false, desc: false, piso: false }
   };
   const META = 10, DESCALIFICA = -5;
 
@@ -105,7 +106,8 @@
     }
     return r;
   }
-  function capacidadRobo(J, j) { return Math.max(0, Math.min(tope(J) - j.mano.length, J.p.mazo.length)); }
+  // Cerrado: tomas 1 o 2 cartas (a tu elección), aunque ya tengas 3. En Combos sin pasar del tope de 9.
+  function capacidadRobo(J, j) { return Math.max(0, Math.min(2, tope(J) - j.mano.length, J.p.mazo.length)); }
 
   // ---------- creación ----------
   function crearJuego(cfg) {
@@ -133,7 +135,7 @@
         dir: cfg.dir === -1 ? -1 : 1,
         // Regla de la casa (NO está en el documento): si todos pasan y el turno vuelve a quien puso la carta
         // de la mesa, se saca una carta nueva del mazo. Por defecto solo en Combos (sin ella nadie gana en Combos).
-        mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : modo === 'combos',
+        mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : true, // si todos pasan y vuelve a quien puso la carta: sale carta nueva
         caos: modo === 'solitario' ? cfg.caos !== false : M.caos
       },
       rs: (cfg.semilla >>> 0) || ((Math.random() * 4294967296) >>> 0),
@@ -190,9 +192,9 @@
     const j = J.jug[p.turno];
     if (j.tipo === 'mazo') return [{ t: 'voltear' }];
     const jug = jugadasValidas(J, j.mano, cima(p));
-    if (p.fase === 'robado') return jug.concat([{ t: 'pasar' }]); // tras robar: jugar o ceder turno (es tu decisión)
+    if (p.fase === 'robado') return jug.length ? jug : [{ t: 'pasar' }]; // tras robar: si una carta sirve, DEBES jugarla; si no, pasa el turno
     if (jug.length) return jug;
-    const cab = capacidadRobo(J, j); // cerrado: con 2 roba 1; con 1 roba 1 o 2; con 3 pasa (tope 3)
+    const cab = capacidadRobo(J, j); // cerrado: roba 1 o 2; solo pasa si el mazo está vacío (o en Combos con 9)
     if (cab > 0) { const r = []; for (let n = 1; n <= cab; n++) r.push({ t: 'robar', n }); return r; }
     return [{ t: 'pasar' }];
   }
@@ -225,8 +227,8 @@
       return '';
     }
     if (a.t === 'pasar') {
+      if (jugs.length) return 'Tienes jugada: debes jugar una carta';
       if (p.fase === 'robado') return '';
-      if (jugs.length) return 'Tienes jugada: no puedes pasar';
       if (capacidadRobo(J, j) > 0) return 'Estás cerrado: debes robar';
       return '';
     }
@@ -304,8 +306,10 @@
   function castigo(modo, n) {
     if (modo === 'familiar') return n >= 3 ? -1 : 0;
     if (modo === 'combos') return n >= 2 ? -n : 0;
-    return n >= 2 ? -(n - 1) : 0; // clásico: 1→0, 2→-1, 3→-2
+    return n >= 2 ? -(n - 1) : 0; // clásico: 1→0, 2→-1, 3→-2, 4→-3, 5→-4…
   }
+  // Con Caos (según cartas): 1→-1, 2→-2, 3 o más→-3 ("pierden 3 los que quedaron con 4 carta"; la sinopsis: máximo 3)
+  function castigoCaosCartas(n) { return -Math.min(n, 3); }
 
   // Puntaje de una partida (función pura). La usan finPartida y el Anotador de cartas físicas.
   // js: [{ puntos, fuera, n: cartas en mano, caos: tiene la otra carta Caos }]
@@ -314,7 +318,7 @@
     const delta = js.map((j, i) => {
       if (j.fuera) return 0;
       if (i === g) return tipo === 'caos' ? 5 : 2;
-      if (tipo === 'caos') return j.caos ? 0 : (castigoCaos === 'fijo' ? -3 : -j.n); // se salva quien tenga la otra Caos
+      if (tipo === 'caos') return j.caos ? 0 : (castigoCaos === 'fijo' ? -3 : castigoCaosCartas(j.n)); // se salva quien tenga la otra Caos
       return castigo(modo, j.n);
     });
     const puntos = js.map((j, i) => {
@@ -389,7 +393,7 @@
     if (ids.length !== total) e.push('Cartas totales ' + ids.length + ' ≠ ' + total);
     if (new Set(ids).size !== ids.length) e.push('Carta duplicada');
     J.jug.forEach((j, i) => {
-      if (j.mano.length > M.tope) e.push(j.nombre + ' supera el tope: ' + j.mano.length);
+      if (Number.isFinite(M.tope) && j.mano.length > M.tope) e.push(j.nombre + ' supera el tope: ' + j.mano.length);
       if (j.fuera && p.fase !== 'fin' && j.mano.length) e.push(j.nombre + ' está fuera y tiene cartas');
       if (M.piso && j.puntos < 0) e.push(j.nombre + ' bajo 0 en Familiar');
       if (!M.caos && J.modo !== 'solitario' && j.mano.some(c => c.e === 'caos')) e.push('Caos en modo sin Caos');

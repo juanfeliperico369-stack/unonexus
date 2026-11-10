@@ -19,7 +19,7 @@
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.3';
+  const VERSION = '1.4';
   // Ganchos para src/extras.js (reto del día, anotador, logros, personalidades)
   const HOOKS = {};
   const on = (e, f) => { (HOOKS[e] = HOOKS[e] || []).push(f); };
@@ -129,9 +129,9 @@
       if (NP.modo === 'clasico') h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
         [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('') +
         '<p class="nota">El documento trae las dos versiones (reglas y sinopsis). Quien tenga la otra Caos se salva.</p>';
-      const ml = NP.mesaLimpia == null ? NP.modo === 'combos' : NP.mesaLimpia;
+      const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
       h += '<label class="tg">Mesa limpia<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
-        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo. Activada en Combos.</p>';
+        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo y esa persona debe sobreponerse a ella. Activada por defecto.</p>';
     } else {
       h += '<label class="tg">Jugar con las 2 cartas Caos (25/25)<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
         '<p class="maq">Récord solitario · tú ' + ST.soloG + ' — mazo ' + ST.soloP + '</p>';
@@ -154,10 +154,10 @@
     '<h2 class="tit">CÓMO SE <span class="rojo">JUEGA</span></h2>' +
     '<p class="ital">Gana la partida quien se quede sin cartas antes que cualquier otro. Gana el juego quien llegue a 10 puntos.</p>' +
     '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="nota">El mismo elemento no se sobrepone a sí mismo.</p>' +
-    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Si estás cerrado: con 3 cartas pasas; con 2 robas 1; con 1 robas 1 o 2 · Tras robar puedes jugar o ceder el turno · Tope: 3 cartas en mano</div>' +
+    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Solo pasas sin robar si el mazo está vacío</div>' +
     '<h3 class="tit">Puntos</h3><table class="res"><tr><th>Al terminar</th><th>Normal</th><th>Con Caos</th></tr>' +
     '<tr><td>Ganador (0 cartas)</td><td class="d mas">+2</td><td class="d mas">+5</td></tr><tr><td>1 carta</td><td class="d">0</td><td class="d menos">−1*</td></tr>' +
-    '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr>' +
+    '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr><tr><td>4 cartas o más</td><td class="d menos">−3, −4…</td><td class="d menos">−3*</td></tr>' +
     '<tr><td>Tiene la otra Caos</td><td class="d">—</td><td class="d">0</td></tr></table>' +
     '<p class="nota">* O −3 a todos, según el ajuste. Se resta aunque tengas 0: en −5 quedas descalificado; con 10 eres el campeón, el rey de reyes.</p>' +
     '<h3 class="tit">Cierre por lógica</h3><p>Si da una vuelta completa sin que nadie pueda jugar ni robar, la partida se cierra sin ganador: 1 carta no pierde, 2 cartas −1, 3 cartas −2.</p>' +
@@ -206,7 +206,7 @@
   }
   function tutorial() {
     capa('<div class="cuerpo"><h2 class="tit">ANTES DE <span class="rojo">EMPEZAR</span></h2>' + tablaVence() +
-      '<p class="ital">Toca una carta resaltada para lanzarla. Si no tienes ninguna, estás cerrado: roba o pasa. Quédate sin cartas para ganar.</p>' +
+      '<p class="ital">Toca una carta resaltada para lanzarla. Si no tienes ninguna, estás cerrado: roba 1 o 2 cartas, y si alguna te sirve, juégala. Quédate sin cartas para ganar.</p>' +
       '<button class="btn rj" data-a="cerrar">¡A jugar!</button></div>');
   }
   function vistaActual() { return G.J ? M.vista(G.J, G.viendo) : G.vista; }
@@ -360,7 +360,7 @@
     const rivales = orden.map(i => {
       const j = v.jug[i], esMazo = j.tipo === 'mazo';
       const cnt = esMazo ? v.rival.mazo : j.n;
-      const fan = Array.from({ length: Math.min(esMazo ? 3 : cnt, MD.tope) }, () => A.reverso(rev)).join('');
+      const fan = Array.from({ length: Math.min(esMazo ? 3 : cnt, 5) }, () => A.reverso(rev)).join('');
       const racha = v.racha && v.racha.j === i && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
       const est = esMazo ? 'PUESTAS ' + v.rival.puestas + '/3 · APARTADAS ' + v.rival.apartadas : (j.fuera ? 'FUERA' : '★' + j.ganadas + racha + (j.tipo === 'bot' ? ' · ' + NIVEL[j.nivel] : j.tipo === 'red' ? ' · LAN' : ''));
       const ultima = !esMazo && !j.fuera && j.n === 1 && v.fase !== 'fin';
@@ -400,10 +400,10 @@
       const robos = v.acciones.filter(a => a.t === 'robar'), pasa = v.acciones.find(a => a.t === 'pasar'), hayJ = v.acciones.some(a => a.t === 'jugar');
       robos.forEach(a => { acc += '<button class="btn ms" data-a="robar" data-n="' + a.n + '">Robar ' + a.n + '</button>'; });
       if (MD.combos && G.sel.length) acc += '<button class="btn rj" data-a="lanzar"' + (seleccionValida(v) ? '' : ' disabled') + '>Lanzar ' + (seleccionValida(v) ? esc(seleccionValida(v)) : '') + '</button>';
-      if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Ceder turno' : 'Pasar') + '</button>';
-      if (v.fase === 'robado') pista = hayJ ? 'Juega una carta resaltada o cede el turno.' : 'No te sirvió: cede el turno.';
+      if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Pasar turno' : 'Pasar') + '</button>';
+      if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
       else if (hayJ) pista = (v.mano.some(c => c.e === 'caos') ? '¡Tienes CAOS! ' : '') + 'Para vencer a ' + nombreJugada(top) + ': ' + quienVence(top, v.modo).join(', ') + (MD.combos ? '. Toca 1 o 2 cartas y lanza.' : '.');
-      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 a ' + robos.length + ' cartas.' : '1 carta.');
+      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas.' : '1 carta.');
       else pista = 'Estás cerrado' + (v.mazo ? ' con el tope de cartas' : ' y el mazo está vacío') + ': pasa.';
     } else if (nt) pista = 'Turno de ' + esc(nt.nombre) + '…';
     const yoJ = v.jug[yo] || { nombre: '', puntos: 0, ganadas: 0 };
@@ -417,7 +417,7 @@
       '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
       '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas + miRacha) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
-      '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + v.mano.length + '">' + mano + '</div>' +
+      '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + Math.min(v.mano.length, 7) + '">' + mano + '</div>' +
       '<div class="acc">' + acc + '</div></div></div>' +
       (cubierta ? '<div class="cubre">' + A.logo() + '<p class="maq">Pasa el dispositivo a</p><h2>' + esc(yoJ.nombre) + '</h2><button class="btn ms" style="max-width:320px" data-a="destapar">Soy ' + esc(yoJ.nombre) + ': ver mis cartas</button></div>' : '');
   }
@@ -709,7 +709,7 @@
     quitar: b => { NP.asientos.splice(+b.dataset.i, 1); LS.set('config', NP); pintar(); },
     empezar: () => {
       LS.set('config', NP);
-      const ml = NP.mesaLimpia == null ? NP.modo === 'combos' : NP.mesaLimpia;
+      const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
       const jug = NP.modo === 'solitario' ? [{ nombre: AJ.nombre, tipo: 'humano' }] : NP.asientos.map(s => ({ nombre: s.nombre || 'Jugador', tipo: s.tipo, nivel: s.nivel }));
       try { iniciar({ modo: NP.modo, jugadores: jug, dir: NP.dir, castigoCaos: NP.castigoCaos, mesaLimpia: ml, caos: NP.caos }); } catch (e) { aviso(e.message); }
     },

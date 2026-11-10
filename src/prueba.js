@@ -16,13 +16,13 @@
   function deltaEsperado(modo, tipo, g, i, cartas, castigoCaos) {
     const n = cartas.length;
     if (i === g) return tipo === 'caos' ? 5 : 2;
-    if (modo === 'familiar') return n === 3 ? -1 : 0;
+    if (modo === 'familiar') return n >= 3 ? -1 : 0;
     if (modo === 'combos') return n >= 2 ? -n : 0;
     if (tipo === 'caos') {
       if (cartas.indexOf('caos') >= 0) return 0;
-      return castigoCaos === 'fijo' ? -3 : -n;
+      return castigoCaos === 'fijo' ? -3 : -Math.min(n, 3);
     }
-    return n === 2 ? -1 : n === 3 ? -2 : 0;
+    return n >= 2 ? -(n - 1) : 0;
   }
 
   // ---------- 1) casos fijos ----------
@@ -55,17 +55,20 @@
     ok(K('fogata', 'aire') && K('fogata', 'tierra'), 'Fogata: vence Aire y Tierra');
     ok(K('evaporacion', 'vendaval') && K('tormenta', 'vendaval') && K('vendaval', 'fuego'), 'Vendaval: lo vencen Evaporación y Tormenta; vence Fuego');
     ok(!M.vence({ k: 'carta', e: 'fuego' }, { k: 'combo', c: 'lodo' }), 'Carta suelta no vence combo');
-    // Cerrado: con 3 pasa, con 2 roba 1, con 1 roba 1 o 2
-    let J = escenario('clasico', [['agua', 'agua', 'tierra'], ['fuego']], 'aire', ['fuego', 'agua', 'tierra']);
-    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Cerrado con 3 cartas: solo pasar');
-    J = escenario('clasico', [['agua', 'tierra'], ['fuego']], 'aire', ['fuego', 'agua', 'tierra']);
-    ok(JSON.stringify(M.acciones(J)) === '[{"t":"robar","n":1}]', 'Cerrado con 2: roba 1');
-    ok(M.esValida(J, { t: 'pasar' }) !== '', 'Cerrado con 2 no puede pasar sin robar');
-    J = escenario('clasico', [['agua'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
-    ok(M.acciones(J).length === 2, 'Cerrado con 1: roba 1 o 2');
+    // Cerrado (reglas aclaradas por el creador): robas 1 o 2 aunque tengas 3; tras robar, si una carta sirve DEBES jugarla
+    let J = escenario('clasico', [['agua', 'agua', 'tierra'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"robar","n":1},{"t":"robar","n":2}]', 'Cerrado con 3 cartas: roba 1 o 2');
+    ok(M.esValida(J, { t: 'pasar' }) !== '', 'Cerrado con 3 no puede pasar sin robar');
     M.aplicar(J, { t: 'robar', n: 2 });
-    ok(J.jug[0].mano.length === 3 && J.p.fase === 'robado', 'Tras robar 2 queda con 3');
-    ok(M.acciones(J).some(a => a.t === 'jugar') && M.acciones(J).some(a => a.t === 'pasar'), 'Tras robar: puede jugar o ceder');
+    ok(J.jug[0].mano.length === 5 && J.p.fase === 'robado', 'Con 3 y robando 2 queda con 5');
+    ok(M.acciones(J).every(a => a.t === 'jugar') && M.esValida(J, { t: 'pasar' }) !== '', 'Tras robar, si una carta sirve debe jugarla (no puede pasar)');
+    J = escenario('clasico', [['agua', 'tierra'], ['fuego']], 'aire', ['agua', 'tierra', 'agua']);
+    M.aplicar(J, { t: 'robar', n: 1 });
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Tras robar sin carta útil: pasa el turno');
+    J = escenario('clasico', [['agua'], ['fuego']], 'aire', []);
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Cerrado con mazo vacío: pasa');
+    J = escenario('clasico', [['agua'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
+    M.aplicar(J, { t: 'robar', n: 2 });
     ok(M.esValida(J, { t: 'robar', n: 1 }) !== '', 'No se roba dos veces');
     // Con jugada no se puede pasar
     J = escenario('clasico', [['fuego', 'agua', 'agua'], ['agua']], 'aire', ['tierra']);

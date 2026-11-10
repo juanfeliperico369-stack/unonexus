@@ -39,7 +39,7 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
 
 ## 3. Reglas implementadas (del documento) — tabla exacta
 - **Mazo**: 50 cartas = 12 Fuego, 12 Tierra, 12 Agua, 12 Aire, 2 Caos (ids 0–47 elementos, 48–49 Caos). Sin Caos: 48.
-- **Jugadores**: 2–12 (Combos 2–6). Cada uno recibe 3 cartas (Combos 6). Tope en mano 3 (Combos 9).
+- **Jugadores**: 2–12 (Combos 2–6). Cada uno recibe 3 cartas (Combos 6). **Sin tope en mano** (aclarado por el creador el 2026-11-10: al robar 1 o 2 se puede quedar con 4, 5…). Combos: tope 9.
 - **Inicio**: la primera carta de la mesa sale del mazo. Dirección elegible (izq→der / der→izq / azar).
 - **Quién vence a quién** (atacante → defensor, verbo):
   - Fuego → Aire (Arde), Agua (Evapora), Tierra (Incendia)
@@ -47,10 +47,10 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
   - Agua → Fuego (Apaga), Tierra (Debilita)
   - Aire → Tierra (Seca), Fuego (Apaga)
   - Mismo elemento **no** vence. **Caos** vence a todo y da victoria inmediata.
-- **Turno**: si tienes carta que se sobrepone, juegas. Si estás **cerrado**: con 3 cartas pasas; con 2 robas 1 (obligatorio); con 1 robas 1 o 2. Tras robar puedes jugar una carta válida o ceder turno (aunque te sirva: "es tu decisión").
+- **Turno** (corregido en v1.4.0 según el creador): si tienes carta que se sobrepone, **debes** jugarla. Si estás **cerrado**, tomas **1 o 2 cartas** (a tu elección), aunque ya tengas 3; no se puede pasar sin robar. Tras robar, si alguna te sirve **debes jugarla**; si no, pasa el turno. Solo se pasa sin robar con el mazo vacío (o en Combos con 9). Ver §16.
 - **Ganar partida**: quedarte con 0 cartas → +2. Con Caos → +5.
-- **Castigos (clásico)**: 1 carta 0 · 2 cartas −1 · 3 cartas −2.
-- **Caos**: los demás pierden; quien tenga la **segunda Caos** se salva (0). Ajuste `castigoCaos`: `cartas` (sección PERDER: −1/−2/−3 según cartas, por defecto) o `fijo` (sinopsis: −3 a todos).
+- **Castigos (clásico)**: 1 carta 0 · 2 cartas −1 · 3 cartas −2 · 4 → −3 · n → −(n−1).
+- **Caos**: los demás pierden; quien tenga la **segunda Caos** se salva (0). Ajuste `castigoCaos`: `cartas` (sección PERDER: 1 carta −1, 2 cartas −2, 3 o más −3 — "pierden 3 los que quedaron con 4 carta"; por defecto) o `fijo` (sinopsis: −3 a todos).
 - **Cierre por lógica** (Extra 2): si da una vuelta completa sin que nadie juegue ni robe, la partida se cierra sin ganador y se castiga por cartas.
 - **Juego completo**: todos empiezan en 0; **10 puntos = campeón ("rey de reyes")**; **−5 o menos = descalificado**. Si queda uno solo, es campeón.
 - **Extras**: el ganador inicia la siguiente partida (mantiene su racha); el que más perdió "reparte" (cosmético). Se cuentan partidas ganadas "para presumir".
@@ -67,11 +67,11 @@ Estética: la de la revista "EVOLUCIÓN MUSICAL" (PDF del usuario) + diseño de 
 
 ## 4. Decisiones donde el documento no es explícito (registradas)
 1. Caos no puede ser la carta inicial: vuelve al mazo (posición al azar) y se saca otra.
-2. Con jugada disponible no se puede pasar ni robar (el documento solo permite ceder tras robar).
-3. Cuando el turno vuelve a quien puso la carta de la mesa, también debe sobreponerse (lectura literal).
+2. Con jugada disponible no se puede pasar ni robar.
+3. Cuando el turno vuelve a quien puso la carta de la mesa: sale carta nueva (mesa limpia, decisión del creador).
 4. No se rebaraja el descarte: si el mazo se agota, nadie roba y llega el cierre por lógica.
 5. Tras un cierre, inicia el siguiente de quien inició la partida anterior.
-6. **`mesaLimpia`**: si el turno vuelve a quien puso la carta de la mesa sin que nadie jugara, se saca una carta nueva del mazo. **Activa por defecto solo en Combos — CONFIRMADO por el usuario** (lo juega así en la vida real y se puede ganar). Sin ella, en simulación nadie gana en Combos. Con ella: partidas con ganador 99 % (2 jug), 88 % (3), 65 % (4), 44 % (5), 15 % (6 jugadores: el mazo de 11 se agota y llega el cierre). Se puede apagar en la configuración.
+6. **`mesaLimpia`**: si el turno vuelve a quien puso la carta de la mesa sin que nadie jugara, se saca una carta nueva del mazo y esa persona debe sobreponerse a ella. **Activa por defecto en TODOS los modos desde v1.4.0 (el creador eligió "sale carta nueva")**; antes solo en Combos (lo juega así en la vida real y se puede ganar). Sin ella, en simulación nadie gana en Combos. Con ella: partidas con ganador 99 % (2 jug), 88 % (3), 65 % (4), 44 % (5), 15 % (6 jugadores: el mazo de 11 se agota y llega el cierre). Se puede apagar en la configuración.
 8. **Castigo Caos por defecto = `cartas`** (−1/−2/−3, sección PERDER) — CONFIRMADO por el usuario ("todo tal cual el documento"). `fijo` (−3, sinopsis) queda como opción.
 7. Si todos quedan descalificados a la vez, el juego termina sin campeón.
 
@@ -152,3 +152,10 @@ Ver `docs/SUGERENCIAS.md` (juego, reglas del libro físico, lanzamiento, anuncio
 - **Logros** (16, `nexus.logros`): no desbloquean nada (todo está desbloqueado por diseño).
 - **Personalidades**: cada bot tiene un elemento y frases (Caos, última carta, gana, queda fuera) en globos sobre su ficha y en los resultados.
 - Pruebas: `node tests/extras.js` (mismas barajas en dos dispositivos, reto completo, texto para compartir, anotador con Caos/descalificación/deshacer, logros, frases).
+
+## 16. v1.4.0 — Reglas de robo corregidas (2026-11-10)
+- El creador explicó cómo se juega en la vida real: se reparten 3, pero cuando estás cerrado tomas 1 o 2 aunque tengas 3 (puedes quedar con 4 o 5) y **debes jugar** si una carta te sirve. La versión anterior (con 3 cartas se pasaba) creaba el "error infinito" de cierres que él también vivió.
+- Motor: `tope` = Infinity (Clásico/Familiar/Solitario), `capacidadRobo` = min(2, tope − mano, mazo), sin "ceder" voluntario, `mesaLimpia` por defecto en todos los modos, castigo Caos según cartas = −min(n, 3).
+- Jugabilidad medida (bots Normal): Clásico con 2–8 jugadores → 0 % de cierres (antes ≈ 8 %), 6–7 partidas por juego, siempre hay campeón. El Caos decide 35–58 % de las partidas (al robar más, circulan más cartas). Combos: 16 % de cierres con 3 jugadores; con 6 jugadores, 88 % (el mazo de 11 se agota). Pendiente: preguntar si en Combos se rebaraja el descarte cuando se acaba el mazo.
+- IA: Normal roba 2 si tiene 1 carta, si no 1; Difícil simula robar 1 o 2.
+- Interfaz: mano de muchas cartas en dos filas; textos de reglas, pistas y tutorial actualizados; tabla de puntos con 4 o más cartas.
