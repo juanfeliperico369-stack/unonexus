@@ -253,6 +253,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 .anota b{display:block;font-family:var(--fd);font-size:1.05rem}
 .anota .chip{min-width:44px;justify-content:center}
 @media (min-width:700px){.logros{grid-template-columns:1fr 1fr}}
+.mano.muchas{flex-wrap:wrap;align-content:flex-end;row-gap:6px}
 </style>
 </head>
 <body>
@@ -287,12 +288,13 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   const COMBO_DE = {};
   for (const k in COMBOS) COMBO_DE[COMBOS[k].e.slice().sort().join('+')] = k;
 
-  // mano: cartas al repartir · tope: máximo en mano · desc: descalifica en -5 · piso: marcador no baja de 0
+  // mano: cartas al repartir · tope: máximo en mano (Infinity = sin tope: se reparten 3, pero al robar 1 o 2 se pasa de 3)
+  // desc: descalifica en -5 · piso: marcador no baja de 0
   const MODOS = {
-    clasico: { n: 'Clásico', min: 2, max: 12, mano: 3, tope: 3, caos: true, combos: false, desc: true, piso: false },
-    familiar: { n: 'Familiar y niños', min: 2, max: 12, mano: 3, tope: 3, caos: false, combos: false, desc: false, piso: true },
+    clasico: { n: 'Clásico', min: 2, max: 12, mano: 3, tope: Infinity, caos: true, combos: false, desc: true, piso: false },
+    familiar: { n: 'Familiar y niños', min: 2, max: 12, mano: 3, tope: Infinity, caos: false, combos: false, desc: false, piso: true },
     combos: { n: 'Combos', min: 2, max: 6, mano: 6, tope: 9, caos: false, combos: true, desc: true, piso: false },
-    solitario: { n: 'Solitario', min: 1, max: 1, mano: 3, tope: 3, caos: true, combos: false, desc: false, piso: false }
+    solitario: { n: 'Solitario', min: 1, max: 1, mano: 3, tope: Infinity, caos: true, combos: false, desc: false, piso: false }
   };
   const META = 10, DESCALIFICA = -5;
 
@@ -367,7 +369,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     }
     return r;
   }
-  function capacidadRobo(J, j) { return Math.max(0, Math.min(tope(J) - j.mano.length, J.p.mazo.length)); }
+  // Cerrado: tomas 1 o 2 cartas (a tu elección), aunque ya tengas 3. En Combos sin pasar del tope de 9.
+  function capacidadRobo(J, j) { return Math.max(0, Math.min(2, tope(J) - j.mano.length, J.p.mazo.length)); }
 
   // ---------- creación ----------
   function crearJuego(cfg) {
@@ -395,7 +398,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
         dir: cfg.dir === -1 ? -1 : 1,
         // Regla de la casa (NO está en el documento): si todos pasan y el turno vuelve a quien puso la carta
         // de la mesa, se saca una carta nueva del mazo. Por defecto solo en Combos (sin ella nadie gana en Combos).
-        mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : modo === 'combos',
+        mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : true, // si todos pasan y vuelve a quien puso la carta: sale carta nueva
         caos: modo === 'solitario' ? cfg.caos !== false : M.caos
       },
       rs: (cfg.semilla >>> 0) || ((Math.random() * 4294967296) >>> 0),
@@ -452,9 +455,9 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     const j = J.jug[p.turno];
     if (j.tipo === 'mazo') return [{ t: 'voltear' }];
     const jug = jugadasValidas(J, j.mano, cima(p));
-    if (p.fase === 'robado') return jug.concat([{ t: 'pasar' }]); // tras robar: jugar o ceder turno (es tu decisión)
+    if (p.fase === 'robado') return jug.length ? jug : [{ t: 'pasar' }]; // tras robar: si una carta sirve, DEBES jugarla; si no, pasa el turno
     if (jug.length) return jug;
-    const cab = capacidadRobo(J, j); // cerrado: con 2 roba 1; con 1 roba 1 o 2; con 3 pasa (tope 3)
+    const cab = capacidadRobo(J, j); // cerrado: roba 1 o 2; solo pasa si el mazo está vacío (o en Combos con 9)
     if (cab > 0) { const r = []; for (let n = 1; n <= cab; n++) r.push({ t: 'robar', n }); return r; }
     return [{ t: 'pasar' }];
   }
@@ -487,8 +490,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       return '';
     }
     if (a.t === 'pasar') {
+      if (jugs.length) return 'Tienes jugada: debes jugar una carta';
       if (p.fase === 'robado') return '';
-      if (jugs.length) return 'Tienes jugada: no puedes pasar';
       if (capacidadRobo(J, j) > 0) return 'Estás cerrado: debes robar';
       return '';
     }
@@ -566,8 +569,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   function castigo(modo, n) {
     if (modo === 'familiar') return n >= 3 ? -1 : 0;
     if (modo === 'combos') return n >= 2 ? -n : 0;
-    return n >= 2 ? -(n - 1) : 0; // clásico: 1→0, 2→-1, 3→-2
+    return n >= 2 ? -(n - 1) : 0; // clásico: 1→0, 2→-1, 3→-2, 4→-3, 5→-4…
   }
+  // Con Caos (según cartas): 1→-1, 2→-2, 3 o más→-3 ("pierden 3 los que quedaron con 4 carta"; la sinopsis: máximo 3)
+  function castigoCaosCartas(n) { return -Math.min(n, 3); }
 
   // Puntaje de una partida (función pura). La usan finPartida y el Anotador de cartas físicas.
   // js: [{ puntos, fuera, n: cartas en mano, caos: tiene la otra carta Caos }]
@@ -576,7 +581,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     const delta = js.map((j, i) => {
       if (j.fuera) return 0;
       if (i === g) return tipo === 'caos' ? 5 : 2;
-      if (tipo === 'caos') return j.caos ? 0 : (castigoCaos === 'fijo' ? -3 : -j.n); // se salva quien tenga la otra Caos
+      if (tipo === 'caos') return j.caos ? 0 : (castigoCaos === 'fijo' ? -3 : castigoCaosCartas(j.n)); // se salva quien tenga la otra Caos
       return castigo(modo, j.n);
     });
     const puntos = js.map((j, i) => {
@@ -651,7 +656,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     if (ids.length !== total) e.push('Cartas totales ' + ids.length + ' ≠ ' + total);
     if (new Set(ids).size !== ids.length) e.push('Carta duplicada');
     J.jug.forEach((j, i) => {
-      if (j.mano.length > M.tope) e.push(j.nombre + ' supera el tope: ' + j.mano.length);
+      if (Number.isFinite(M.tope) && j.mano.length > M.tope) e.push(j.nombre + ' supera el tope: ' + j.mano.length);
       if (j.fuera && p.fase !== 'fin' && j.mano.length) e.push(j.nombre + ' está fuera y tiene cartas');
       if (M.piso && j.puntos < 0) e.push(j.nombre + ' bajo 0 en Familiar');
       if (!M.caos && J.modo !== 'solitario' && j.mano.some(c => c.e === 'caos')) e.push('Caos en modo sin Caos');
@@ -791,10 +796,16 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       return mejor;
     }
     const robos = acc.filter(a => a.t === 'robar');
-    if (robos.length) return nivel <= 1 ? robos[Math.floor(r() * robos.length)] : robos[0]; // roba lo mínimo
+    if (robos.length) {
+      if (nivel <= 1 || robos.length === 1) return robos[Math.floor(r() * robos.length)];
+      if (nivel >= 3) return elegirMC(J, robos, r, IA.iteraciones); // Difícil: simula robar 1 o 2
+      return robos[IA.roboNormal(J, i)]; // Normal: heurística
+    }
     return acc.find(a => a.t === 'pasar') || acc[0];
   }
-  const IA = { elegir, puntuar, desconocidas, iteraciones: 24 };
+  // Normal: con 1 carta en mano roba 2 (más opciones para salir); si no, roba 1 (menos castigo si pierde).
+  function roboNormal(J, i) { return J.jug[i].mano.length <= 1 ? 1 : 0; }
+  const IA = { elegir, puntuar, desconocidas, roboNormal, iteraciones: 24 };
   raiz.IA = IA;
   if (typeof module !== 'undefined' && module.exports) module.exports = IA;
 })(typeof window !== 'undefined' ? window : globalThis);
@@ -818,13 +829,13 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   function deltaEsperado(modo, tipo, g, i, cartas, castigoCaos) {
     const n = cartas.length;
     if (i === g) return tipo === 'caos' ? 5 : 2;
-    if (modo === 'familiar') return n === 3 ? -1 : 0;
+    if (modo === 'familiar') return n >= 3 ? -1 : 0;
     if (modo === 'combos') return n >= 2 ? -n : 0;
     if (tipo === 'caos') {
       if (cartas.indexOf('caos') >= 0) return 0;
-      return castigoCaos === 'fijo' ? -3 : -n;
+      return castigoCaos === 'fijo' ? -3 : -Math.min(n, 3);
     }
-    return n === 2 ? -1 : n === 3 ? -2 : 0;
+    return n >= 2 ? -(n - 1) : 0;
   }
 
   // ---------- 1) casos fijos ----------
@@ -857,17 +868,20 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     ok(K('fogata', 'aire') && K('fogata', 'tierra'), 'Fogata: vence Aire y Tierra');
     ok(K('evaporacion', 'vendaval') && K('tormenta', 'vendaval') && K('vendaval', 'fuego'), 'Vendaval: lo vencen Evaporación y Tormenta; vence Fuego');
     ok(!M.vence({ k: 'carta', e: 'fuego' }, { k: 'combo', c: 'lodo' }), 'Carta suelta no vence combo');
-    // Cerrado: con 3 pasa, con 2 roba 1, con 1 roba 1 o 2
-    let J = escenario('clasico', [['agua', 'agua', 'tierra'], ['fuego']], 'aire', ['fuego', 'agua', 'tierra']);
-    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Cerrado con 3 cartas: solo pasar');
-    J = escenario('clasico', [['agua', 'tierra'], ['fuego']], 'aire', ['fuego', 'agua', 'tierra']);
-    ok(JSON.stringify(M.acciones(J)) === '[{"t":"robar","n":1}]', 'Cerrado con 2: roba 1');
-    ok(M.esValida(J, { t: 'pasar' }) !== '', 'Cerrado con 2 no puede pasar sin robar');
-    J = escenario('clasico', [['agua'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
-    ok(M.acciones(J).length === 2, 'Cerrado con 1: roba 1 o 2');
+    // Cerrado (reglas aclaradas por el creador): robas 1 o 2 aunque tengas 3; tras robar, si una carta sirve DEBES jugarla
+    let J = escenario('clasico', [['agua', 'agua', 'tierra'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"robar","n":1},{"t":"robar","n":2}]', 'Cerrado con 3 cartas: roba 1 o 2');
+    ok(M.esValida(J, { t: 'pasar' }) !== '', 'Cerrado con 3 no puede pasar sin robar');
     M.aplicar(J, { t: 'robar', n: 2 });
-    ok(J.jug[0].mano.length === 3 && J.p.fase === 'robado', 'Tras robar 2 queda con 3');
-    ok(M.acciones(J).some(a => a.t === 'jugar') && M.acciones(J).some(a => a.t === 'pasar'), 'Tras robar: puede jugar o ceder');
+    ok(J.jug[0].mano.length === 5 && J.p.fase === 'robado', 'Con 3 y robando 2 queda con 5');
+    ok(M.acciones(J).every(a => a.t === 'jugar') && M.esValida(J, { t: 'pasar' }) !== '', 'Tras robar, si una carta sirve debe jugarla (no puede pasar)');
+    J = escenario('clasico', [['agua', 'tierra'], ['fuego']], 'aire', ['agua', 'tierra', 'agua']);
+    M.aplicar(J, { t: 'robar', n: 1 });
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Tras robar sin carta útil: pasa el turno');
+    J = escenario('clasico', [['agua'], ['fuego']], 'aire', []);
+    ok(JSON.stringify(M.acciones(J)) === '[{"t":"pasar"}]', 'Cerrado con mazo vacío: pasa');
+    J = escenario('clasico', [['agua'], ['fuego']], 'aire', ['agua', 'tierra', 'fuego']);
+    M.aplicar(J, { t: 'robar', n: 2 });
     ok(M.esValida(J, { t: 'robar', n: 1 }) !== '', 'No se roba dos veces');
     // Con jugada no se puede pasar
     J = escenario('clasico', [['fuego', 'agua', 'agua'], ['agua']], 'aire', ['tierra']);
@@ -1500,7 +1514,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.3';
+  const VERSION = '1.4';
   // Ganchos para src/extras.js (reto del día, anotador, logros, personalidades)
   const HOOKS = {};
   const on = (e, f) => { (HOOKS[e] = HOOKS[e] || []).push(f); };
@@ -1610,9 +1624,9 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       if (NP.modo === 'clasico') h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
         [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('') +
         '<p class="nota">El documento trae las dos versiones (reglas y sinopsis). Quien tenga la otra Caos se salva.</p>';
-      const ml = NP.mesaLimpia == null ? NP.modo === 'combos' : NP.mesaLimpia;
+      const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
       h += '<label class="tg">Mesa limpia<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
-        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo. Activada en Combos.</p>';
+        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo y esa persona debe sobreponerse a ella. Activada por defecto.</p>';
     } else {
       h += '<label class="tg">Jugar con las 2 cartas Caos (25/25)<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
         '<p class="maq">Récord solitario · tú ' + ST.soloG + ' — mazo ' + ST.soloP + '</p>';
@@ -1635,10 +1649,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     '<h2 class="tit">CÓMO SE <span class="rojo">JUEGA</span></h2>' +
     '<p class="ital">Gana la partida quien se quede sin cartas antes que cualquier otro. Gana el juego quien llegue a 10 puntos.</p>' +
     '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="nota">El mismo elemento no se sobrepone a sí mismo.</p>' +
-    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Si estás cerrado: con 3 cartas pasas; con 2 robas 1; con 1 robas 1 o 2 · Tras robar puedes jugar o ceder el turno · Tope: 3 cartas en mano</div>' +
+    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Solo pasas sin robar si el mazo está vacío</div>' +
     '<h3 class="tit">Puntos</h3><table class="res"><tr><th>Al terminar</th><th>Normal</th><th>Con Caos</th></tr>' +
     '<tr><td>Ganador (0 cartas)</td><td class="d mas">+2</td><td class="d mas">+5</td></tr><tr><td>1 carta</td><td class="d">0</td><td class="d menos">−1*</td></tr>' +
-    '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr>' +
+    '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr><tr><td>4 cartas o más</td><td class="d menos">−3, −4…</td><td class="d menos">−3*</td></tr>' +
     '<tr><td>Tiene la otra Caos</td><td class="d">—</td><td class="d">0</td></tr></table>' +
     '<p class="nota">* O −3 a todos, según el ajuste. Se resta aunque tengas 0: en −5 quedas descalificado; con 10 eres el campeón, el rey de reyes.</p>' +
     '<h3 class="tit">Cierre por lógica</h3><p>Si da una vuelta completa sin que nadie pueda jugar ni robar, la partida se cierra sin ganador: 1 carta no pierde, 2 cartas −1, 3 cartas −2.</p>' +
@@ -1687,7 +1701,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   }
   function tutorial() {
     capa('<div class="cuerpo"><h2 class="tit">ANTES DE <span class="rojo">EMPEZAR</span></h2>' + tablaVence() +
-      '<p class="ital">Toca una carta resaltada para lanzarla. Si no tienes ninguna, estás cerrado: roba o pasa. Quédate sin cartas para ganar.</p>' +
+      '<p class="ital">Toca una carta resaltada para lanzarla. Si no tienes ninguna, estás cerrado: roba 1 o 2 cartas, y si alguna te sirve, juégala. Quédate sin cartas para ganar.</p>' +
       '<button class="btn rj" data-a="cerrar">¡A jugar!</button></div>');
   }
   function vistaActual() { return G.J ? M.vista(G.J, G.viendo) : G.vista; }
@@ -1841,7 +1855,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     const rivales = orden.map(i => {
       const j = v.jug[i], esMazo = j.tipo === 'mazo';
       const cnt = esMazo ? v.rival.mazo : j.n;
-      const fan = Array.from({ length: Math.min(esMazo ? 3 : cnt, MD.tope) }, () => A.reverso(rev)).join('');
+      const fan = Array.from({ length: Math.min(esMazo ? 3 : cnt, 5) }, () => A.reverso(rev)).join('');
       const racha = v.racha && v.racha.j === i && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
       const est = esMazo ? 'PUESTAS ' + v.rival.puestas + '/3 · APARTADAS ' + v.rival.apartadas : (j.fuera ? 'FUERA' : '★' + j.ganadas + racha + (j.tipo === 'bot' ? ' · ' + NIVEL[j.nivel] : j.tipo === 'red' ? ' · LAN' : ''));
       const ultima = !esMazo && !j.fuera && j.n === 1 && v.fase !== 'fin';
@@ -1881,10 +1895,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       const robos = v.acciones.filter(a => a.t === 'robar'), pasa = v.acciones.find(a => a.t === 'pasar'), hayJ = v.acciones.some(a => a.t === 'jugar');
       robos.forEach(a => { acc += '<button class="btn ms" data-a="robar" data-n="' + a.n + '">Robar ' + a.n + '</button>'; });
       if (MD.combos && G.sel.length) acc += '<button class="btn rj" data-a="lanzar"' + (seleccionValida(v) ? '' : ' disabled') + '>Lanzar ' + (seleccionValida(v) ? esc(seleccionValida(v)) : '') + '</button>';
-      if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Ceder turno' : 'Pasar') + '</button>';
-      if (v.fase === 'robado') pista = hayJ ? 'Juega una carta resaltada o cede el turno.' : 'No te sirvió: cede el turno.';
+      if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Pasar turno' : 'Pasar') + '</button>';
+      if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
       else if (hayJ) pista = (v.mano.some(c => c.e === 'caos') ? '¡Tienes CAOS! ' : '') + 'Para vencer a ' + nombreJugada(top) + ': ' + quienVence(top, v.modo).join(', ') + (MD.combos ? '. Toca 1 o 2 cartas y lanza.' : '.');
-      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 a ' + robos.length + ' cartas.' : '1 carta.');
+      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas.' : '1 carta.');
       else pista = 'Estás cerrado' + (v.mazo ? ' con el tope de cartas' : ' y el mazo está vacío') + ': pasa.';
     } else if (nt) pista = 'Turno de ' + esc(nt.nombre) + '…';
     const yoJ = v.jug[yo] || { nombre: '', puntos: 0, ganadas: 0 };
@@ -1898,7 +1912,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
       '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas + miRacha) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
-      '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + v.mano.length + '">' + mano + '</div>' +
+      '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + Math.min(v.mano.length, 7) + '">' + mano + '</div>' +
       '<div class="acc">' + acc + '</div></div></div>' +
       (cubierta ? '<div class="cubre">' + A.logo() + '<p class="maq">Pasa el dispositivo a</p><h2>' + esc(yoJ.nombre) + '</h2><button class="btn ms" style="max-width:320px" data-a="destapar">Soy ' + esc(yoJ.nombre) + ': ver mis cartas</button></div>' : '');
   }
@@ -2190,7 +2204,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     quitar: b => { NP.asientos.splice(+b.dataset.i, 1); LS.set('config', NP); pintar(); },
     empezar: () => {
       LS.set('config', NP);
-      const ml = NP.mesaLimpia == null ? NP.modo === 'combos' : NP.mesaLimpia;
+      const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
       const jug = NP.modo === 'solitario' ? [{ nombre: AJ.nombre, tipo: 'humano' }] : NP.asientos.map(s => ({ nombre: s.nombre || 'Jugador', tipo: s.tipo, nivel: s.nivel }));
       try { iniciar({ modo: NP.modo, jugadores: jug, dir: NP.dir, castigoCaos: NP.castigoCaos, mesaLimpia: ml, caos: NP.caos }); } catch (e) { aviso(e.message); }
     },
@@ -2644,7 +2658,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       h += '<span class="campo">Cartas que le quedaron a cada uno</span>';
       act.filter(i => i !== FORM.g).forEach(i => {
         h += '<div class="anota"><b>' + esc(T.jug[i].nombre) + '</b><div>';
-        for (let n = 1; n <= MD.tope; n++) h += '<button class="chip' + (FORM.n[i] === n ? ' on' : '') + '" data-a="anN" data-i="' + i + '" data-v="' + n + '">' + n + '</button>';
+        for (let n = 1; n <= (Number.isFinite(MD.tope) ? MD.tope : 8); n++) h += '<button class="chip' + (FORM.n[i] === n ? ' on' : '') + '" data-a="anN" data-i="' + i + '" data-v="' + n + '">' + n + '</button>';
         if (FORM.caos) h += '<button class="chip' + (FORM.otra === i ? ' on' : '') + '" data-a="anOtra" data-i="' + i + '">Tiene la otra Caos</button>';
         h += '</div></div>';
       });
