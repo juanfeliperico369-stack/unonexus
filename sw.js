@@ -1,6 +1,6 @@
 /* NEXUS CAOS — service worker: guarda el juego en caché para abrir sin internet.
  * El nombre de caché es propio del juego y de la versión; al cambiar de versión se borran las anteriores. */
-const CACHE = 'nexus-caos-v1.4.0-normal';
+const CACHE = 'nexus-caos-v2.0.0-normal';
 const ARCHIVOS = ["./","./index.html","./manifest.webmanifest","./icon-192.png","./icon-512.png","./icon-maskable-512.png","./apple-touch-icon.png","./favicon-32.png"];
 self.addEventListener('install', e => {
   e.waitUntil(caches.open(CACHE).then(c => c.addAll(ARCHIVOS)).then(() => self.skipWaiting()));

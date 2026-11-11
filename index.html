@@ -254,6 +254,44 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 .anota .chip{min-width:44px;justify-content:center}
 @media (min-width:700px){.logros{grid-template-columns:1fr 1fr}}
 .mano.muchas{flex-wrap:wrap;align-content:flex-end;row-gap:6px}
+/* ===== v2: diseño limpio (estilos y colores de la revista, sin su contenido) ===== */
+.barra{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:10px;background:var(--petroleo);color:var(--papel);padding:calc(6px + env(safe-area-inset-top)) 10px 6px;min-height:56px}
+.barra .atras{min-width:44px;min-height:44px;border:2px solid var(--papel);background:transparent;color:var(--papel);font:700 1.6rem/1 var(--fd)}
+.barra .bt{flex:1;font-family:var(--fd);font-size:1.5rem;letter-spacing:.03em;text-transform:uppercase}
+.barra .bx{font:700 .7rem var(--fm);letter-spacing:.14em;text-transform:uppercase;background:var(--mostaza);color:#111;padding:5px 8px}
+.portada .cuerpo{padding-top:calc(18px + env(safe-area-inset-top))}
+.hero{display:flex;flex-direction:column;align-items:center;text-align:center;margin:4px 0 14px}
+.hero .logo{width:min(52vw,230px);height:auto;margin:0 auto 6px;filter:drop-shadow(5px 6px 0 rgba(0,0,0,.18))}
+.hero h1{font-family:var(--fd);font-size:clamp(3.4rem,18vw,6.6rem);line-height:.82;margin:0;color:var(--petroleo)}
+.hero h1 b{color:var(--rojo);margin-left:.12em}
+.hero .alqs{justify-content:center;margin:10px 0 4px}.hero .alqs::after{display:none}
+.hero .lema{margin:4px 0 0;font-size:1.25rem;letter-spacing:.06em}
+.lead{font:italic 1rem/1.4 var(--fs);color:var(--gris);margin:8px 0}
+.record{text-align:center;margin:14px 0 4px}
+.creditos{text-align:center;margin:6px 0 0}
+/* pila realista */
+.pila .pc,.pila .gi{position:absolute;inset:0}
+.pila .pc:not(.arriba) .carta-svg{filter:brightness(.72)}
+.pila .arriba .carta-svg{filter:drop-shadow(0 6px 10px rgba(0,0,0,.6))}
+.pila .tapada{visibility:hidden}
+.pila .volteo{animation:volteo .42s cubic-bezier(.2,.8,.25,1)}
+@keyframes volteo{0%{transform:scaleX(0) translateY(-18px)}60%{transform:scaleX(1.06)}100%{transform:none}}
+.vuelo{position:fixed;z-index:35;pointer-events:none;transform-origin:0 0}
+.vuelo .carta-svg{width:100%;height:auto;display:block;filter:drop-shadow(0 4px 6px rgba(0,0,0,.5))}
+.mano .c.oculta{visibility:hidden}
+.mano .c.sel{transform:translateY(-24px) scale(1.04)}
+/* Solitario: mazo rival con sus 3 casillas y las apartadas */
+.rivales.solo{justify-content:center}
+.solo-rival{display:flex;align-items:center;gap:14px;padding:8px 12px;background:rgba(0,0,0,.38);border:1.5px solid rgba(239,233,214,.18);border-radius:12px}
+.solo-rival.turno{border-color:var(--mostaza);box-shadow:0 0 0 2px var(--mostaza)}
+.sr-pila{position:relative;width:48px;height:69px}
+.sr-pila .carta-svg{position:absolute;inset:0;width:100%;height:100%}
+.sr-pila .cnt{position:absolute;left:50%;bottom:-11px;transform:translateX(-50%);background:#000;color:var(--mostaza2);font:700 .55rem var(--fm);letter-spacing:.08em;padding:2px 5px;white-space:nowrap;border:1px solid var(--mostaza)}
+.sr-info{text-align:center}.sr-info b{font-family:var(--fd);font-size:1.15rem;letter-spacing:.06em}
+.casillas{display:inline-flex;gap:6px;vertical-align:middle}
+.casilla{display:inline-block;width:16px;height:22px;border:2px solid var(--mostaza2);border-radius:3px}
+.casilla.on{background:var(--mostaza2)}
+.msup button+button{margin-left:-2px}
 </style>
 </head>
 <body>
@@ -399,7 +437,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
         // Regla de la casa (NO está en el documento): si todos pasan y el turno vuelve a quien puso la carta
         // de la mesa, se saca una carta nueva del mazo. Por defecto solo en Combos (sin ella nadie gana en Combos).
         mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : true, // si todos pasan y vuelve a quien puso la carta: sale carta nueva
-        caos: modo === 'solitario' ? cfg.caos !== false : M.caos
+        // Cartas Caos: el Clásico y el Solitario permiten elegir jugar con ellas o sin ellas; Familiar y Combos no las usan.
+        caos: (modo === 'solitario' || modo === 'clasico') ? cfg.caos !== false : M.caos
       },
       rs: (cfg.semilla >>> 0) || ((Math.random() * 4294967296) >>> 0),
       jug, np: 0, inicia: -1, campeon: -1, terminado: false, p: null,
@@ -500,6 +539,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 
   // Aplica una acción. Devuelve {ok, ev} o {ok:false, error}. Nunca lanza por acciones inválidas.
   function aplicar(J, a, quien) {
+    const r = aplicarBase(J, a, quien);
+    if (r.ok) { const n = rebarajar(J); if (n) r.ev.rebarajado = n; }
+    return r;
+  }
+  function aplicarBase(J, a, quien) {
     const err = esValida(J, a, quien);
     if (err) return { ok: false, error: err };
     const p = J.p, i = p.turno, j = J.jug[i];
@@ -508,7 +552,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     if (a.t === 'jugar') {
       const top = cima(p), cartas = a.ids.map(id => j.mano.find(c => c.id === id));
       const jg = formarJugada(J, cartas);
-      jg.ids = a.ids.slice(); jg.por = i; jg.verbo = verbo(jg, top);
+      jg.ids = a.ids.slice(); jg.es = cartas.map(c => c.e); jg.por = i; jg.verbo = verbo(jg, top);
       j.mano = j.mano.filter(c => a.ids.indexOf(c.id) < 0);
       p.mesa.push(jg); p.quietos = 0;
       if (J.modo === 'solitario') p.puestasJ++;
@@ -533,7 +577,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     else {
       avanzar(J);
       const top = cima(p);
-      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && top.por === p.turno && p.mazo.length) {
+      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && top.por === p.turno && !p.mazo.length) ev.rebarajado = rebarajar(J);
+      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && cima(p).por === p.turno && p.mazo.length) {
         p.mesa.push(voltearInicial(J, p.mazo)); p.quietos = 0; ev.limpia = cima(p).e;
       }
     }
@@ -563,6 +608,19 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     return { ok: true, ev: { t: 'apartar', p: 1, carta: { id: c.id, e: c.e }, sobre: top } };
   }
 
+  // Mazo vacío (decisión del creador): se barajan las cartas jugadas en la mesa, menos la de arriba, y forman un mazo nuevo.
+  function rebarajar(J) {
+    const p = J.p;
+    if (J.modo === 'solitario' || p.fase === 'fin' || p.mazo.length || p.mesa.length < 2) return 0;
+    const top = p.mesa.pop(), cartas = [];
+    p.mesa.forEach(m => (m.ids || []).forEach((id, k) => {
+      const e = (m.es && m.es[k]) || (m.k === 'caos' ? 'caos' : m.k === 'combo' ? COMBOS[m.c].e[k] : m.e);
+      cartas.push({ id, e });
+    }));
+    p.mazo = barajar(J, cartas);
+    p.mesa = [top];
+    return cartas.length;
+  }
   function avanzar(J) { const p = J.p; p.turno = siguiente(J, p.turno); p.fase = 'turno'; p.robo = 0; }
 
   // Castigo por cartas en mano al terminar (sin Caos). Ver tabla en docs/GUIA.md.
@@ -623,6 +681,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     // Inicia la próxima: el ganador (mantiene su racha). Sin ganador: el siguiente de quien inició.
     if (!J.terminado) J.inicia = (g >= 0 && !J.jug[g].fuera) ? g : siguiente(J, J.inicia);
     const delta = R.delta, fuera = R.fuera, reparte = R.reparte;
+    J.reparte = reparte; // el que más perdió reparte la siguiente (regla Extra 1)
     p.fin = { tipo, ganador: g, delta, manos, cartas, fuera, reparte, mesaN: p.mesa.length, racha: r.n };
   }
 
@@ -635,7 +694,8 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       mano: (yo >= 0 && J.jug[yo]) ? J.jug[yo].mano.map(c => ({ id: c.id, e: c.e })) : [],
       mesa: p.mesa.slice(-8).map(m => JSON.parse(JSON.stringify(m))),
       mazo: p.mazo.length, mesaN: p.mesa.length, racha: J.racha || { j: -1, n: 0 }, turno: p.turno, fase: p.fase, robo: p.robo, quietos: p.quietos,
-      rival: R ? { mazo: R.mazo.length, puestas: R.puestas, apartadas: R.apartadas.length } : null,
+      rival: R ? { mazo: R.mazo.length, puestas: R.puestas, apartadas: R.apartadas.length, ultApartada: R.apartadas.length ? R.apartadas[R.apartadas.length - 1].e : null } : null,
+      reparte: J.reparte == null ? -1 : J.reparte,
       puestasJ: p.puestasJ,
       fin: p.fin ? JSON.parse(JSON.stringify(p.fin)) : null,
       terminado: J.terminado, campeon: J.campeon, inicia: J.inicia,
@@ -750,7 +810,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     return K;
   }
   function valorFinal(K, i, antes) {
-    const f = K.p.fin; if (!f) return 0;
+    const f = K.p.fin;
+    if (!f) { // partida sin terminar en la simulación: estimar por cartas en mano frente al promedio rival
+      const otros = K.jug.filter((j, k) => k !== i && !j.fuera), media = otros.reduce((s, j) => s + j.mano.length, 0) / Math.max(1, otros.length);
+      return (media - K.jug[i].mano.length) * 0.5;
+    }
     return (K.jug[i].puntos - antes) + (f.ganador === i ? 1 : 0);
   }
   function prng(seed) {
@@ -760,13 +824,17 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   // Números aleatorios comunes: cada iteración usa la MISMA mano simulada y la misma semilla para todas las opciones.
   function elegirMC(J, cands, r, iter) {
     const i = J.p.turno, antes = J.jug[i].puntos, suma = cands.map(() => 0);
+    // Presupuesto según la mesa: menos simulaciones con muchos jugadores o en Combos (partidas largas) → rápido en celulares modestos.
+    const act = J.jug.filter(j => !j.fuera).length;
+    iter = Math.max(6, Math.round(iter * Math.min(1, 4 / act) * (M.MODOS[J.modo].combos ? 0.5 : 1)));
+    const tope = M.MODOS[J.modo].combos ? 90 : 160;
     for (let it = 0; it < iter; it++) {
       const base = JSON.stringify(simulada(J, i, r)), sem = (r() * 4294967296) >>> 0;
       for (let c = 0; c < cands.length; c++) {
         const K = JSON.parse(base), rr = prng(sem);
         M.aplicar(K, cands[c]);
         let pasos = 0;
-        while (K.p.fase !== 'fin' && pasos++ < 400) { const a = elegir(K, rr); if (!a || !M.aplicar(K, a).ok) break; }
+        while (K.p.fase !== 'fin' && pasos++ < tope) { const a = elegir(K, rr); if (!a || !M.aplicar(K, a).ok) break; }
         suma[c] += valorFinal(K, i, antes);
       }
     }
@@ -924,6 +992,14 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     ok(J.p.rival.mazo.length === 22 && M.verificar(J).length === 0, 'Solitario con Caos: mazo rival de 22');
     J = M.crearJuego({ modo: 'solitario', jugadores: [{ nombre: 'T', tipo: 'humano' }], semilla: 3, caos: false });
     ok(J.p.rival.mazo.length === 21, 'Solitario sin Caos: mazo rival de 21');
+    // Mazo vacío: se rebaraja la mesa (menos la de arriba)
+    J = escenario('clasico', [['agua', 'agua'], ['fuego']], 'tierra', ['agua']);
+    J.p.mesa = [{ k: 'carta', e: 'fuego', ids: [90], por: -1 }, { k: 'carta', e: 'agua', ids: [91], es: ['agua'], por: 1 }, { k: 'carta', e: 'aire', ids: [92], es: ['aire'], por: 1 }];
+    const rr = M.aplicar(J, { t: 'robar', n: 1 });
+    ok(rr.ok && rr.ev.rebarajado === 2 && J.p.mazo.length === 2 && J.p.mesa.length === 1 && J.p.mesa[0].e === 'aire', 'Mazo vacío: se rebaraja la mesa menos la carta de arriba');
+    // Clásico sin cartas Caos (opción del documento)
+    J = M.crearJuego({ modo: 'clasico', jugadores: [{ tipo: 'bot' }, { tipo: 'bot' }], semilla: 5, caos: false });
+    ok(J.cfg.caos === false && M.verificar(J).length === 0 && !J.p.mazo.concat(J.jug[0].mano, J.jug[1].mano).some(c => c.e === 'caos'), 'Clásico sin cartas Caos: mazo de 48');
     // Acción inválida no altera el estado
     J = escenario('clasico', [['agua', 'tierra', 'fuego'], ['fuego']], 'aire', ['tierra']);
     const antes = JSON.stringify(J);
@@ -1075,13 +1151,14 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   function grupoColor(id, color, ancho) {
     return '<g fill="none" stroke="' + color + '" stroke-width="' + ancho + '" stroke-linecap="round" stroke-linejoin="round">' + TRAZO[id] + '</g>';
   }
-  function marco(fondo, borde) {
+  function marco(fondo, borde, tinte) {
     return '<rect x="1.5" y="1.5" width="137" height="197" rx="11" fill="' + fondo + '" stroke="#000" stroke-width="3"/>' +
+      (tinte ? '<rect x="3" y="3" width="134" height="194" rx="10" fill="url(#nx-t-' + tinte + ')"/>' : '') +
       '<rect x="7" y="7" width="126" height="186" rx="8" fill="none" stroke="' + borde + '" stroke-width="1.2" opacity=".7"/>';
   }
   function frente(e) {
     const c = COLOR[e];
-    let s = marco('#3D3939', c);
+    let s = marco('#3D3939', c, e);
     if (e === 'caos') {
       s += '<g opacity=".55" fill="#fff">' + [[20, 30], [112, 22], [30, 170], [116, 160], [70, 24], [24, 100], [118, 96], [64, 178]].map(p => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.3"/>').join('') + '</g>';
       s += '<g transform="translate(22 46) scale(.96)">' + grupo('caos_s', '#fff', 3.2) + hoyos() + '</g>';
@@ -1139,7 +1216,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     if (instalado || typeof document === 'undefined') return;
     instalado = true;
     const ns = 'http://www.w3.org/2000/svg';
-    let defs = '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath><clipPath id="nx-clip-logo"><circle cx="50" cy="50" r="42"/></clipPath>';
+    // Brillo suave del color del elemento en el centro y viñeta oscura en los bordes (frente "universal" #3D3939)
+    let defs = ['fuego', 'agua', 'tierra', 'aire', 'caos'].map(e => '<radialGradient id="nx-t-' + e + '" cx="50%" cy="42%" r="68%">' +
+      '<stop offset="0" stop-color="' + COLOR[e] + '" stop-opacity="' + (e === 'caos' ? '.16' : '.24') + '"/><stop offset=".55" stop-color="' + COLOR[e] + '" stop-opacity=".05"/>' +
+      '<stop offset="1" stop-color="#000" stop-opacity=".42"/></radialGradient>').join('');
+    defs += '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath><clipPath id="nx-clip-logo"><circle cx="50" cy="50" r="42"/></clipPath>';
     ['fuego', 'agua', 'tierra', 'aire'].forEach(e => { defs += '<symbol id="nx-a-' + e + '" viewBox="0 0 100 100"><g fill="none" stroke="' + COLOR[e] + '" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">' + ALQ[e] + '</g></symbol>'; });
     defs += '<symbol id="nx-a-tao" viewBox="0 0 100 100">' + TAO + '</symbol>';
     ['fuego', 'agua', 'tierra', 'aire', 'caos'].forEach(e => { defs += '<symbol id="nx-c-' + e + '" viewBox="0 0 140 200">' + frente(e) + '</symbol>'; });
@@ -1205,6 +1286,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   Object.assign(S, {
     toque() { tono(880, 0.05, 'square', 0.04); },
     carta(e) { chss(0.12, 0.25, 3000); const x = ELEM[e]; if (x) tono(x[0], 0.18, x[1], 0.07, 0.03); vib(15); },
+    reparte() { chss(0.05, 0.12, 3400); },
     robar() { chss(0.09, 0.18, 1800); chss(0.09, 0.14, 2200, 0.08); },
     pasar() { tono(260, 0.12, 'triangle', 0.06, 0, 200); },
     error() { tono(140, 0.18, 'square', 0.06); vib([30, 40, 30]); },
@@ -1505,7 +1587,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     set(k, v) { try { localStorage.setItem('nexus.' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('nexus.' + k); } catch (e) {} }
   };
-  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false, auto: true }, LS.get('ajustes', {}));
+  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false, auto: false, toqueRapido: false }, LS.get('ajustes', {}));
   const ST = Object.assign({ partidas: 0, ganadas: 0, coronas: 0, caos: 0, soloG: 0, soloP: 0 }, LS.get('stats', {}));
   const guardaAJ = () => { LS.set('ajustes', AJ); SND.activo = AJ.sonido; SND.vibrar = AJ.vibrar; document.body.classList.toggle('quieto', !!AJ.quieto); };
   const guardaST = () => LS.set('stats', ST);
@@ -1514,7 +1596,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.4';
+  const VERSION = '2.0';
   // Ganchos para src/extras.js (reto del día, anotador, logros, personalidades)
   const HOOKS = {};
   const on = (e, f) => { (HOOKS[e] = HOOKS[e] || []).push(f); };
@@ -1549,6 +1631,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   }
   function cerrarCapa() { const c = $('#capa'); if (c) c.remove(); if (window.QRScan) window.QRScan.parar(); }
   function franja(izq, der) { return '<div class="franja"><span>' + izq + '</span><span class="der">' + der + '</span></div>'; }
+  // Barra superior de cada pantalla: volver + título (sin adornos de revista)
+  function barra(titulo, extra) {
+    return '<div class="barra"><button class="atras" data-a="' + (pantalla === 'lan' ? 'lanSalir' : 'inicio') + '" aria-label="Volver">‹</button><span class="bt">' + titulo + '</span>' + (extra ? '<span class="bx">' + extra + '</span>' : '') + '</div>';
+  }
   function ir(p) { pantalla = p; cerrarCapa(); pintar(); window.scrollTo(0, 0); }
   function pintar() {
     const app = $('#app');
@@ -1583,33 +1669,26 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   const VISTAS = {};
   VISTAS.inicio = () => {
     const hay = !!LS.get('partida', null);
-    return '<div class="pag portada">' + franja('Nexus Caos · Edición Nº 1', 'Cartas elementales') +
-      '<div class="cuerpo"><div class="cabeza"><h1>NEXUS<b>CAOS</b></h1>' + A.logo() + '</div>' +
-      A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
-      '<div class="pelicula">4 elementos · 50 cartas · 2 a 12 jugadores · gana quien llegue a 10 · −5 queda fuera</div>' +
-      (hay ? '<button class="btn ms" data-a="continuar">Continuar partida <small>guardada</small></button>' : '') +
+    return '<div class="pag portada"><div class="cuerpo"><div class="hero">' + A.logo() + '<h1>NEXUS<b>CAOS</b></h1>' + A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p></div>' +
+      (hay ? '<button class="btn ms" data-a="continuar">Continuar partida</button>' : '') +
       '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' + EXTRA.inicio1() +
       '<button class="btn pt" data-a="nueva">Nueva partida <small>modos y jugadores</small></button>' +
-      '<button class="btn ng" data-a="lan">Modo LAN <small>Wi-Fi sin internet</small></button>' +
+      '<button class="btn ng" data-a="lan">Multijugador <small>Wi-Fi · Bluetooth</small></button>' +
       EXTRA.inicio2() + '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
-      '<p class="maq" style="margin-top:14px">Récord · ' + ST.ganadas + ' partidas ganadas · ' + ST.coronas + ' coronas · ' + ST.caos + ' caos</p>' +
-      '<div class="sep" aria-hidden="true">' + ['fuego', 'agua', 'aire', 'tierra', 'tao'].map(e => A.alq(e)).join('') + '</div>' +
-      '<p class="nota creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p>' +
-      '</div><span class="pagnum">PAG 01</span></div>';
+      '<p class="maq record">★ ' + ST.ganadas + ' partidas · ♛ ' + ST.coronas + ' coronas · ☯ ' + ST.caos + ' caos</p>' +
+      '<p class="creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p></div></div>';
   };
-
   VISTAS.nueva = () => {
     const MD = M.MODOS[NP.modo];
     ajustarAsientos();
     const modos = [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos'], ['solitario', 'Solitario']];
     const desc = {
-      clasico: '3 cartas, con Caos. Gana +2 (Caos +5). Llega a 10 y eres campeón; en −5 quedas descalificado.',
-      familiar: 'Para niños: sin Caos, nadie queda fuera, el marcador no baja de 0 y solo pierde 1 quien quede con 3 cartas.',
-      combos: '2 a 6 jugadores, 6 cartas (tope 9), sin Caos. Combina dos elementos: Lodo, Vendaval, Tormenta, Fogata máxima, Oxígeno maligno y Evaporación masiva.',
-      solitario: TEXTO_SOLO
+      clasico: 'El original: 3 cartas, ganar +2 (con Caos +5). A 10 eres campeón; en −5 quedas fuera.',
+      familiar: 'Sin Caos, nadie queda fuera y el marcador no baja de 0.',
+      combos: '2 a 6 jugadores, 6 cartas, tope 9. Combina dos elementos en una jugada.',
+      solitario: 'Tú contra el mazo: gana quien ponga primero 3 cartas.'
     };
-    let h = '<div class="pag">' + franja('Nueva partida', 'PAG 02') + '<div class="cuerpo">' +
-      '<h2 class="tit">ELIGE TU <span class="rojo">CAOS</span></h2><span class="campo">Modo</span>' +
+    let h = '<div class="pag">' + barra('Nueva partida') + '<div class="cuerpo"><span class="campo">Modo</span>' +
       modos.map(([k, n]) => '<button class="chip' + (NP.modo === k ? ' on' : '') + '" data-a="modo" data-v="' + k + '">' + n + '</button>').join('') +
       '<p class="nota">' + desc[NP.modo] + '</p>';
     if (NP.modo !== 'solitario') {
@@ -1619,19 +1698,20 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
         '<select data-c="nivel" data-i="' + i + '" aria-label="Nivel"' + (s.tipo === 'bot' ? '' : ' disabled') + '>' + [1, 2, 3].map(n => '<option value="' + n + '"' + (s.nivel === n ? ' selected' : '') + '>' + NIVEL[n] + '</option>').join('') + '</select>' +
         '<button class="mini-btn" data-a="quitar" data-i="' + i + '" aria-label="Quitar"' + (NP.asientos.length <= MD.min ? ' disabled' : '') + '>✕</button></div>').join('');
       h += '<div class="fila-btn"><button class="btn" data-a="mas" data-v="bot"' + (NP.asientos.length >= MD.max ? ' disabled' : '') + '>+ Bot</button><button class="btn" data-a="mas" data-v="humano"' + (NP.asientos.length >= MD.max ? ' disabled' : '') + '>+ Humano</button></div>';
-      h += '<p class="nota">Varios humanos en un mismo dispositivo: se pasan el celular en cada turno.</p>';
       h += '<span class="campo">Dirección</span>' + [[1, 'Izq → Der'], [-1, 'Der → Izq'], [0, 'Al azar']].map(([v, n]) => '<button class="chip' + (NP.dir === v ? ' on' : '') + '" data-a="dir" data-v="' + v + '">' + n + '</button>').join('');
-      if (NP.modo === 'clasico') h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
-        [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('') +
-        '<p class="nota">El documento trae las dos versiones (reglas y sinopsis). Quien tenga la otra Caos se salva.</p>';
+      if (NP.modo === 'clasico') {
+        h += '<label class="tg">Con las 2 cartas Caos<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>';
+        if (NP.caos) h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
+          [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('');
+      }
       const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
-      h += '<label class="tg">Mesa limpia<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
-        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo y esa persona debe sobreponerse a ella. Activada por defecto.</p>';
+      h += '<label class="tg">Si todos pasan, sale carta nueva<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
+''; 
     } else {
-      h += '<label class="tg">Jugar con las 2 cartas Caos (25/25)<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
+      h += '<label class="tg">Con las 2 cartas Caos<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
         '<p class="maq">Récord solitario · tú ' + ST.soloG + ' — mazo ' + ST.soloP + '</p>';
     }
-    h += '<button class="btn rj" data-a="empezar">Empezar <small>' + MD.n + '</small></button><button class="btn" data-a="inicio">Volver</button></div></div>';
+    h += '<button class="btn rj" data-a="empezar">Empezar <small>' + MD.n + '</small></button></div></div>';
     return h;
   };
   function ajustarAsientos() {
@@ -1645,11 +1725,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     return { nombre: NOMBRES_BOT.find(n => usados.indexOf(n) < 0) || ('Bot ' + (NP.asientos.length + 1)), tipo: 'bot', nivel: 2 };
   }
 
-  VISTAS.reglas = () => '<div class="pag">' + franja('Reglas del caos', 'PAG 03') + '<div class="cuerpo">' +
+  VISTAS.reglas = () => '<div class="pag">' + barra('Reglas') + '<div class="cuerpo">' +
     '<h2 class="tit">CÓMO SE <span class="rojo">JUEGA</span></h2>' +
-    '<p class="ital">Gana la partida quien se quede sin cartas antes que cualquier otro. Gana el juego quien llegue a 10 puntos.</p>' +
-    '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="nota">El mismo elemento no se sobrepone a sí mismo.</p>' +
-    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Solo pasas sin robar si el mazo está vacío</div>' +
+    '<p class="lead">Gana la partida quien se queda sin cartas primero. Gana el juego quien llega a 10 puntos.</p>' +
+    '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="lead">El mismo elemento no vence a sí mismo.</p>' +
+    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Si se acaba el mazo, se barajan las cartas de la mesa</div>' +
     '<h3 class="tit">Puntos</h3><table class="res"><tr><th>Al terminar</th><th>Normal</th><th>Con Caos</th></tr>' +
     '<tr><td>Ganador (0 cartas)</td><td class="d mas">+2</td><td class="d mas">+5</td></tr><tr><td>1 carta</td><td class="d">0</td><td class="d menos">−1*</td></tr>' +
     '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr><tr><td>4 cartas o más</td><td class="d menos">−3, −4…</td><td class="d menos">−3*</td></tr>' +
@@ -1660,22 +1740,23 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     '<b>Combos</b> (2–6): 6 cartas, tope 9; con n cartas al final pierdes n (1 carta no pierde).</p><p><b>Solitario</b>: ' + TEXTO_SOLO + '</p>' +
     '<div class="caja"><b class="fd">COMBOS</b><br>' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(v => M.COMBOS[v] ? M.COMBOS[v].n : M.NOMBRE[v]).join(', ')).join('<br>') + '<br><i>Mesa limpia: si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo.</i></div>' +
     '<h3 class="tit">Extras</h3><p>El ganador tira primero la siguiente partida para mantener su racha; el que pierde reparte. Las partidas ganadas se cuentan para presumir.</p>' +
-    '<button class="btn" data-a="inicio">Volver</button></div><span class="pagnum">PAG 03</span></div>';
+    '</div></div>';
 
-  VISTAS.ajustes = () => '<div class="pag">' + franja('Ajustes', 'PAG 04') + '<div class="cuerpo"><h2 class="tit">AJUSTES</h2>' +
+  VISTAS.ajustes = () => '<div class="pag">' + barra('Ajustes') + '<div class="cuerpo">' +
     '<span class="campo">Tu nombre</span><div class="asiento" style="grid-template-columns:1fr"><input data-c="minombre" value="' + esc(AJ.nombre) + '" maxlength="16"></div>' +
     '<label class="tg">Sonido<input type="checkbox" data-c="sonido"' + (AJ.sonido ? ' checked' : '') + '></label>' +
     '<label class="tg">Vibración<input type="checkbox" data-c="vibrar"' + (AJ.vibrar ? ' checked' : '') + '></label>' +
     '<label class="tg">Reducir animaciones<input type="checkbox" data-c="quieto"' + (AJ.quieto ? ' checked' : '') + '></label>' +
     '<label class="tg">Siguiente partida automática<input type="checkbox" data-c="auto"' + (AJ.auto ? ' checked' : '') + '></label>' +
+    '<label class="tg">Lanzar con un solo toque<input type="checkbox" data-c="toqueRapido"' + (AJ.toqueRapido ? ' checked' : '') + '></label>' +
     '<span class="campo">Velocidad de los bots</span>' + [['lenta', 'Lenta'], ['normal', 'Normal'], ['rapida', 'Rápida']].map(([v, n]) => '<button class="chip' + (AJ.velocidad === v ? ' on' : '') + '" data-a="vel" data-v="' + v + '">' + n + '</button>').join('') +
     '<span class="campo">Reverso de las cartas</span><div style="display:flex;gap:10px">' + [['baja', 'Gama baja'], ['media', 'Gama media'], ['alta', 'Gama alta']].map(([v, n]) =>
       '<button class="chip' + (AJ.reverso === v ? ' on' : '') + '" data-a="reverso" data-v="' + v + '" style="flex-direction:column;padding:6px">' + A.reverso(v, '') .replace('class="carta-svg ', 'style="width:56px;height:80px" class="carta-svg ') + n + '</button>').join('') + '</div>' +
-    '<h3 class="tit">Bot de pruebas</h3><p class="nota">Simula partidas en este dispositivo y revisa reglas, puntajes y pantallas buscando errores.</p>' +
+    '<h3 class="tit">Bot de pruebas</h3>' +
     '<button class="btn ms" data-a="autoprueba">Ejecutar bot de pruebas</button>' +
-    '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord, historial y ajustes son tuyos. Exporta para guardar una copia o pasarla a otro dispositivo.</p>' + historialHTML() +
+    '<h3 class="tit">Tus datos</h3>' + historialHTML() +
     '<div class="fila-btn"><button class="btn" data-a="exportar">Exportar</button><button class="btn" data-a="importar">Importar</button></div><input type="file" id="archivo" accept=".json,application/json" class="oculto">' +
-    '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button>' +
+    '<button class="btn" data-a="borrar">Borrar datos guardados</button>' +
     '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero por Infinite Tree</p></div></div>';
 
   function historialHTML() {
@@ -1691,7 +1772,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     if (G) clearTimeout(G.timer);
     const J = M.crearJuego(cfg);
     const locales = []; J.jug.forEach((j, i) => { if (j.tipo === 'humano') locales.push(i); });
-    G = Object.assign({ J, locales, viendo: locales.length ? locales[0] : 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: red || null, contado: 0, cfg, mapaRed: {} }, extra || {});
+    G = Object.assign({ J, locales, viendo: locales.length ? locales[0] : 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: red || null, contado: 0, cfg, mapaRed: {}, ritualPend: true }, extra || {});
     G.cubierto = locales.length > 1 && J.jug[J.p.turno].tipo === 'humano';
     if (G.cubierto) G.viendo = J.p.turno;
     pantalla = 'mesa';
@@ -1705,7 +1786,57 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       '<button class="btn rj" data-a="cerrar">¡A jugar!</button></div>');
   }
   function vistaActual() { return G.J ? M.vista(G.J, G.viendo) : G.vista; }
-  function demora() { return DEMORA[AJ.velocidad] || 760; }
+  function demora() { return Math.round((DEMORA[AJ.velocidad] || 760) * (0.8 + Math.random() * 0.6)); }
+  // ---------- realismo: vuelos de cartas, reparto y volteo de la primera carta ----------
+  function volar(desde, hacia, html, retraso, dur) {
+    const d = document.createElement('div');
+    d.className = 'vuelo'; d.innerHTML = html;
+    d.style.cssText = 'left:' + desde.left + 'px;top:' + desde.top + 'px;width:' + desde.width + 'px;height:' + desde.height + 'px';
+    document.body.appendChild(d);
+    const k = hacia.width / desde.width, dx = hacia.left - desde.left, dy = hacia.top - desde.top;
+    setTimeout(() => { d.style.transition = 'transform ' + dur + 'ms cubic-bezier(.2,.8,.25,1)'; d.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ')'; }, retraso + 20);
+    setTimeout(() => d.remove(), retraso + dur + 80);
+  }
+  function rectChico(r, base) { const w = base.width * 0.36; return { left: r.left + r.width / 2 - w / 2, top: r.top + r.height / 2 - w * 0.7, width: w }; }
+  // Al empezar cada partida: el que reparte da las cartas una por una y luego voltea la primera carta del mazo.
+  function ritual() {
+    if (!G || !G.ritualPend) return;
+    G.ritualPend = false;
+    const v = vistaActual();
+    if (AJ.quieto || G.cubierto || pantalla !== 'mesa') return;
+    const mz = document.querySelector('.mazo .carta-svg'); if (!mz) return;
+    const o = mz.getBoundingClientRect(); if (!o.width) return;
+    const MD = M.MODOS[v.modo], n = v.jug.length, mias = [...document.querySelectorAll('.mano .c')], destinos = [];
+    if (v.modo === 'solitario') mias.forEach(el => destinos.push({ el }));
+    else {
+      const orden = []; let x = v.inicia >= 0 ? v.inicia : v.turno;
+      for (let k = 0; k < n; k++) { if (!v.jug[x].fuera) orden.push(x); x = (((x + v.dir) % n) + n) % n; }
+      let mia = 0;
+      for (let ronda = 0; ronda < MD.mano; ronda++) orden.forEach(i => {
+        if (i === v.yo) { if (mias[mia]) destinos.push({ el: mias[mia++] }); }
+        else { const el = document.querySelector('[data-j="' + i + '"]'); if (el) destinos.push({ chip: el }); }
+      });
+    }
+    mias.forEach(el => el.classList.add('oculta'));
+    const arriba = document.querySelector('.pila .arriba'); if (arriba) arriba.classList.add('tapada');
+    const paso = Math.max(24, Math.min(90, 1200 / Math.max(1, destinos.length))), dur = 360, rev = A.reverso(AJ.reverso);
+    destinos.forEach((d, k) => {
+      const r = (d.el || d.chip).getBoundingClientRect();
+      volar(o, d.el ? r : rectChico(r, o), rev, k * paso, dur);
+      setTimeout(() => { if (d.el) d.el.classList.remove('oculta'); if (k % 2 === 0) SND.reparte(); }, k * paso + dur);
+    });
+    const total = destinos.length * paso + dur;
+    setTimeout(() => { const t = document.querySelector('.pila .arriba'); if (t) { t.classList.remove('tapada'); t.classList.add('volteo'); } SND.carta(); }, total + 60);
+    G.ritualHasta = Date.now() + total + 520;
+  }
+  // Cuando un rival roba, sus cartas viajan del mazo a su lugar.
+  function vueloRobo(ev, v) {
+    if (AJ.quieto || !ev || ev.t !== 'robar' || ev.p === v.yo) return;
+    const mz = document.querySelector('.mazo .carta-svg') || document.querySelector('.mazo'), chip = document.querySelector('[data-j="' + ev.p + '"]');
+    if (!mz || !chip) return;
+    const o = mz.getBoundingClientRect(), r = chip.getBoundingClientRect(), rev = A.reverso(AJ.reverso);
+    for (let k = 0; k < ev.n; k++) volar(o, rectChico(r, o), rev, k * 120, 340);
+  }
   function guardar() {
     if (!G || !G.J || G.red) return;
     if (G.J.terminado && G.J.p.fase === 'fin') LS.del('partida');
@@ -1727,11 +1858,13 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     const t = J.jug[p.turno];
     if (t.tipo === 'humano') {
       if (G.locales.length > 1 && G.viendo !== p.turno) { G.viendo = p.turno; G.cubierto = true; }
-      pintarMesaSegura();
+      pintarMesaSegura(); ritual();
       if (!G.cubierto) SND.turno();
     } else {
-      pintarMesaSegura();
-      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J, G.rngIA); if (a) hacer(a, p.turno); }, demora());
+      pintarMesaSegura(); ritual();
+      // Ritmo humano: cada bot piensa un tiempo variable (más si tiene varias opciones) y espera a que termine el reparto
+      const extra = M.acciones(J).length > 1 ? 260 : 0, espera = Math.max(0, (G.ritualHasta || 0) - Date.now());
+      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J, G.rngIA); if (a) hacer(a, p.turno); }, demora() + extra + espera);
     }
   }
   function pintarMesaSegura() {
@@ -1755,7 +1888,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   // Aplica una acción (local o anfitrión). quien = asiento que actúa.
   function hacer(a, quien, rectOrigen) {
     if (!G || !G.J) return { ok: false };
-    const origen = rectOrigen || rectDe('.rival[data-j="' + quien + '"]') || rectDe('.yo');
+    const origen = rectOrigen || rectDe('[data-j="' + quien + '"]') || rectDe('.yo');
     const r = M.aplicar(G.J, a, quien);
     if (!r.ok) {
       const t = G.J.jug[quien];
@@ -1768,6 +1901,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     efectos(r.ev);
     ciclo();
     animar(r.ev, r.ev.t === 'jugar' ? origen : null);
+    vueloRobo(r.ev, vistaActual());
     return r;
   }
   function efectos(ev) {
@@ -1827,10 +1961,14 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
 
   // ---------- texto del cartel ----------
   function textoEvento(ev, v) {
+    const t = textoEvento0(ev, v);
+    return ev && ev.rebarajado ? t + ' · <b>SE BARAJA LA MESA</b> (' + ev.rebarajado + ' CARTAS AL MAZO)' : t;
+  }
+  function textoEvento0(ev, v) {
     const n = i => i >= 0 && v.jug[i] ? esc(v.jug[i].nombre).toUpperCase() : 'MESA';
     if (!ev) {
       const top = v.mesa[v.mesa.length - 1];
-      return 'PARTIDA ' + v.np + ' · LA MESA ABRE CON <b>' + nombreJugada(top) + '</b> · INICIA ' + n(v.turno);
+      return 'PARTIDA ' + v.np + (v.reparte >= 0 && v.jug[v.reparte] ? ' · REPARTE ' + n(v.reparte) : '') + ' · LA MESA ABRE CON <b>' + nombreJugada(top) + '</b> · INICIA ' + n(v.turno);
     }
     if (ev.t === 'jugar') {
       const j = ev.jugada;
@@ -1863,15 +2001,24 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
         '<div class="nm">' + esc(j.nombre) + '</div>' + (esMazo ? '' : '<div class="pt' + (j.puntos < 0 ? ' neg' : '') + '">' + j.puntos + '</div>') + '<div class="est">' + est + '</div>' +
         (G && G.globos && G.globos[i] && G.globos[i].hasta > Date.now() ? '<span class="globo">' + esc(G.globos[i].t) + '</span>' : '') + '</div>';
     }).join('');
-    // historia (jugadas anteriores)
-    const hist = v.mesa.slice(0, -1).slice(-6).map(m => elemsJugada(m).map(e => A.carta(e)).join('')).join('');
-    // pila
-    const prev = v.mesa.length > 1 ? v.mesa[v.mesa.length - 2] : null;
-    let pila = prev ? A.carta(elemsJugada(prev)[0], 'debajo') : '';
-    const te = elemsJugada(top);
-    pila += te.length === 2 ? A.carta(te[0], 'arriba') + A.carta(te[1], 'combo2') : A.carta(te[0], 'arriba');
+    // pila realista: las últimas jugadas apiladas, cada carta con su propio giro
+    const ult = v.mesa.slice(-5);
+    let pila = '';
+    ult.forEach((m, k) => {
+      const es = elemsJugada(m), id0 = (m.ids && m.ids[0]) || 0, arriba = k === ult.length - 1;
+      const giro = arriba ? ((id0 * 37) % 9) - 4 : ((id0 * 37) % 23) - 11, dx = ((id0 * 13) % 11) - 5, dy = ((id0 * 7) % 9) - 4;
+      pila += '<div class="pc' + (arriba ? ' arriba' : '') + '"><div class="gi" style="transform:translate(' + dx + 'px,' + dy + 'px) rotate(' + giro + 'deg)">' + A.carta(es[0]) + (es.length === 2 ? A.carta(es[1], 'combo2') : '') + '</div></div>';
+    });
     const mazoN = v.mazo, solo = v.modo === 'solitario';
-    const mazo = (mazoN ? Array.from({ length: Math.min(3, mazoN) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">' + (solo ? 'AUXILIAR ' : 'MAZO ') + mazoN + '</span>';
+    const mazo = (mazoN ? Array.from({ length: Math.min(4, Math.ceil(mazoN / 10)) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">' + (solo ? 'AUXILIAR ' : 'MAZO ') + mazoN + '</span>';
+    let zonaRival = rivales;
+    if (solo) { // Solitario: el mazo rival, sus 3 casillas y las cartas apartadas
+      const R = v.rival, cas = k => [0, 1, 2].map(x => '<i class="casilla' + (x < k ? ' on' : '') + '"></i>').join('');
+      zonaRival = '<div class="solo-rival' + (v.turno === 1 && v.fase !== 'fin' ? ' turno' : '') + '" data-j="1">' +
+        '<div class="sr-pila">' + (R.mazo ? A.reverso(rev) : '<div class="vacio"></div>') + '<span class="cnt">RIVAL ' + R.mazo + '</span></div>' +
+        '<div class="sr-info"><b>EL MAZO</b><div class="casillas">' + cas(R.puestas) + '</div></div>' +
+        '<div class="sr-pila">' + (R.ultApartada ? A.carta(R.ultApartada) : '<div class="vacio"></div>') + '<span class="cnt">APARTADAS ' + R.apartadas + '</span></div></div>';
+    }
     // mano
     const jugables = {}, combos = [];
     (v.acciones || []).forEach(a => {
@@ -1894,22 +2041,26 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     else if (miTurno && !cubierta) {
       const robos = v.acciones.filter(a => a.t === 'robar'), pasa = v.acciones.find(a => a.t === 'pasar'), hayJ = v.acciones.some(a => a.t === 'jugar');
       robos.forEach(a => { acc += '<button class="btn ms" data-a="robar" data-n="' + a.n + '">Robar ' + a.n + '</button>'; });
+      const unaSel = !MD.combos && G.sel.length === 1 && v.mano.find(c => c.id === G.sel[0]);
+      if (unaSel) acc += '<button class="btn rj" data-a="lanzar">Lanzar ' + NOM(unaSel.e) + '</button>';
       if (MD.combos && G.sel.length) acc += '<button class="btn rj" data-a="lanzar"' + (seleccionValida(v) ? '' : ' disabled') + '>Lanzar ' + (seleccionValida(v) ? esc(seleccionValida(v)) : '') + '</button>';
       if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Pasar turno' : 'Pasar') + '</button>';
-      if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
+      if (unaSel) pista = '<b>' + NOM(unaSel.e) + '</b> ' + (unaSel.e === 'caos' ? '— ¡final total! +5' : (M.VENCE[unaSel.e][top.e] || '').toLowerCase() + ' ' + nombreJugada(top)) + ' · toca otra vez para lanzar';
+      else if (MD.combos && G.sel.length && seleccionValida(v)) pista = 'Lanzar <b>' + esc(seleccionValida(v)) + '</b> · vence a ' + nombreJugada(top);
+      else if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
       else if (hayJ) pista = (v.mano.some(c => c.e === 'caos') ? '¡Tienes CAOS! ' : '') + 'Para vencer a ' + nombreJugada(top) + ': ' + quienVence(top, v.modo).join(', ') + (MD.combos ? '. Toca 1 o 2 cartas y lanza.' : '.');
-      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas.' : '1 carta.');
+      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas (más cartas, más opciones… y más castigo si pierdes).' : '1 carta.');
       else pista = 'Estás cerrado' + (v.mazo ? ' con el tope de cartas' : ' y el mazo está vacío') + ': pasa.';
     } else if (nt) pista = 'Turno de ' + esc(nt.nombre) + '…';
     const yoJ = v.jug[yo] || { nombre: '', puntos: 0, ganadas: 0 };
-    const info = v.modo === 'solitario' ? 'TÚ ' + v.puestasJ + '/3 · MAZO ' + v.rival.puestas + '/3' : yoJ.puntos + ' PTS';
+    const info = v.modo === 'solitario' ? '<span class="casillas">' + [0, 1, 2].map(x => '<i class="casilla' + (x < v.puestasJ ? ' on' : '') + '"></i>').join('') + '</span>' : yoJ.puntos + ' PTS';
     const miRacha = v.racha && v.racha.j === yo && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
     const dirTxt = v.dir === 1 ? '↻' : '↺';
     const muchas = v.mano.length > 3;
     return '<div class="mesa">' +
-      '<div class="msup"><button data-a="menuMesa" aria-label="Menú">☰</button><span class="t">PARTIDA ' + v.np + ' · ' + MD.n + (v.modo === 'solitario' ? '' : ' · META 10') + (G && G.red ? ' · LAN' : '') + '</span><span aria-label="Dirección">' + dirTxt + '</span></div>' +
-      '<div class="rivales">' + rivales + '</div>' +
-      '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
+      '<div class="msup"><button data-a="menuMesa" aria-label="Menú">☰</button><span class="t">PARTIDA ' + v.np + ' · ' + MD.n + (v.modo === 'solitario' ? '' : ' · META 10') + (G && G.red ? ' · LAN' : '') + '</span>' + (MD.combos ? '<button data-a="verCombos" aria-label="Tabla de combos">⁂</button>' : '') + '<span aria-label="Dirección">' + dirTxt + '</span></div>' +
+      '<div class="rivales' + (solo ? ' solo' : '') + '">' + zonaRival + '</div>' +
+      '<div class="centro"><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
       '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas + miRacha) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
       '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + Math.min(v.mano.length, 7) + '">' + mano + '</div>' +
@@ -2065,8 +2216,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   VISTAS.lan = () => {
     const R = window.Red, disp = R && R.disponible();
     const bt = R && R.btDisponible();
-    let h = '<div class="pag">' + franja('Multijugador', 'Sin internet') + '<div class="cuerpo"><h2 class="tit">JUGAR EN <span class="rojo">RED LOCAL</span></h2>' +
-      '<p class="ital">Wi-Fi (o el punto de acceso de un celular) o Bluetooth. No necesita internet ni servidor.</p>';
+    let h = '<div class="pag">' + barra('Multijugador', 'sin internet') + '<div class="cuerpo">';
     if (!disp && !bt) return h + '<div class="caja roja">Este navegador no permite conexiones directas (WebRTC). Prueba con Chrome, Edge o Firefox actualizados.</div><button class="btn" data-a="inicio">Volver</button></div></div>';
     if (!SALA) {
       h += '<h3 class="tit">Wi-Fi</h3>' +
@@ -2088,7 +2238,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       else if (bt) h += '<button class="btn" data-a="abrirBT">Abrir también por Bluetooth</button>';
       h += '<button class="btn rj" data-a="salaEmpezar"' + (SALA.asientos.length < MD.min ? ' disabled' : '') + '>Empezar</button>';
     } else {
-      h += '<div class="pelicula">' + esc(SALA.estado || 'Conectando…') + '</div><p class="nota">Cuando el anfitrión empiece, la mesa aparecerá sola.</p>';
+      h += '<div class="pelicula">' + esc(SALA.estado || 'Conectando…') + '</div>';
     }
     return h + '<button class="btn" data-a="lanSalir">' + (SALA ? 'Salir de la sala' : 'Volver') + '</button></div></div>';
   };
@@ -2142,10 +2292,11 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
           if (o.ev && (!antes || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.fase !== o.v.fase)) disparar('evento', o.ev, o.v);
           const nuevo = !antes || antes.np !== o.v.np || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.turno !== o.v.turno || antes.fase !== o.v.fase;
           if (nuevo && o.ev && (!antes || antes.fase !== 'fin' || o.v.fase !== 'fin')) efectos(o.ev);
-          const origen = o.ev && o.ev.t === 'jugar' ? (o.ev.p === o.v.yo ? G.rectPend : rectDe('.rival[data-j="' + o.ev.p + '"]')) : null;
-          if (antes && antes.np !== o.v.np) cerrarCapa();
+          const origen = o.ev && o.ev.t === 'jugar' ? (o.ev.p === o.v.yo ? G.rectPend : rectDe('[data-j="' + o.ev.p + '"]')) : null;
+          if (!antes || antes.np !== o.v.np) { cerrarCapa(); G.ritualPend = true; }
           pintarMesaSegura();
-          if (nuevo) animar(o.ev, origen);
+          ritual();
+          if (nuevo) { animar(o.ev, origen); vueloRobo(o.ev, o.v); }
           if (o.v.turno === o.v.yo && o.v.fase !== 'fin' && nuevo) SND.turno();
           if (o.v.fase === 'fin' && (!antes || antes.fase !== 'fin' || antes.np !== o.v.np)) {
             setTimeout(mostrarFin, 1000);
@@ -2221,6 +2372,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       }
       const ok = v.acciones.some(a => a.t === 'jugar' && a.ids.length === 1 && (v.mano.find(x => x.id === a.ids[0]) || {}).e === c.e);
       if (!ok) { const top = v.mesa[v.mesa.length - 1]; aviso(NOM(c.e) + ' no vence a ' + nombreJugada(top)); SND.error(); return; }
+      if (!AJ.toqueRapido && G.sel[0] !== id) { G.sel = [id]; SND.toque(); pintarMesaSegura(); return; } // 1.er toque: elegir y ver el efecto
       jugadorActua({ t: 'jugar', ids: [id] }, b.getBoundingClientRect());
     },
     lanzar: () => {
@@ -2242,12 +2394,13 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
           return '<tr class="' + (o.j.fuera ? 'fuera' : '') + (o.i === v.turno ? ' gana' : '') + '"><td>' + esc(o.j.nombre) + ' <small>★' + o.j.ganadas + racha + '</small><div class="camino' + (MD.desc ? '' : ' sin-desc') + '"><i style="left:' + pos.toFixed(1) + '%"></i></div></td><td>' + (o.j.fuera ? 'FUERA' : o.j.n) + '</td><td class="tot">' + o.j.puntos + '</td></tr>';
         }).join('') + '</table><p class="nota">' + (MD.desc ? 'Rojo: zona negativa. En −5 quedas fuera; con 10 eres el rey de reyes.' : 'Gana quien llegue a 10.') + '</p><button class="btn" data-a="menuMesa">Volver</button></div>');
     },
+    verCombos: () => capa('<div class="cuerpo"><h2 class="tit">COMBOS</h2><div class="caja">' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(x => M.COMBOS[x] ? M.COMBOS[x].n : M.NOMBRE[x]).join(', ')).join('<br>') + '</div><p class="lead">Una carta suelta no vence a un combo. Toca 2 cartas para combinarlas.</p><button class="btn" data-a="cerrar">Volver</button></div>'),
     verVence: () => capa('<div class="cuerpo"><h2 class="tit">QUIÉN VENCE</h2>' + tablaVence() + '<button class="btn" data-a="cerrar">Volver</button></div>'),
     pausaAuto: () => { if (G) { clearTimeout(G.auto); G.np0 = -1; } const b = $('#btnSig'); if (b) b.textContent = 'Siguiente partida'; const pz = $('#btnPausa'); if (pz) pz.remove(); },
     siguiente: () => {
       if (!G || !G.J || G.J.p.fase !== 'fin' || G.J.terminado) return;
       clearTimeout(G.auto); G.np0 = -1;
-      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = []; G.jugados = {};
+      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = []; G.jugados = {}; G.ritualPend = true;
       SND.robar(); setTimeout(() => SND.robar(), 120);
       if (EDICION === 'normal' && G.J.np % 4 === 0) { try { window.NexusAnuncios.entrePartidas(G.J.np); } catch (e) {} }
       if (G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano') { G.viendo = G.J.p.turno; G.cubierto = true; }
@@ -2363,9 +2516,9 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     else if (c === 'tipo') { NP.asientos[i].tipo = t.value; LS.set('config', NP); pintar(); }
     else if (c === 'nivel') { NP.asientos[i].nivel = +t.value; LS.set('config', NP); }
     else if (c === 'mesaLimpia') { NP.mesaLimpia = t.checked; LS.set('config', NP); }
-    else if (c === 'caos') { NP.caos = t.checked; LS.set('config', NP); }
+    else if (c === 'caos') { NP.caos = t.checked; LS.set('config', NP); pintar(); }
     else if (c === 'minombre') { AJ.nombre = t.value.slice(0, 16) || 'Tú'; if (NP.asientos[0] && NP.asientos[0].tipo === 'humano') NP.asientos[0].nombre = AJ.nombre; guardaAJ(); LS.set('config', NP); }
-    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto' || c === 'auto') { AJ[c] = t.checked; guardaAJ(); }
+    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto' || c === 'auto' || c === 'toqueRapido') { AJ[c] = t.checked; guardaAJ(); }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarCapa(); });
   window.addEventListener('pagehide', guardar);
@@ -2385,7 +2538,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     return false;
   };
   window.NexusUI = { ir, iniciar, vistaActual, get G() { return G; }, get pantalla() { return pantalla; }, ACC, autoprueba, VISTAS,
-    LS, AJ, ST, guardaST, capa, cerrarCapa, aviso, esc, pintar, franja, on, disparar, pintarMesaSegura, EXTRA, SND, URL_JUEGO: 'https://juanfeliperico369-stack.github.io/unonexus/' };
+    LS, AJ, ST, guardaST, capa, cerrarCapa, aviso, esc, pintar, franja, barra, on, disparar, pintarMesaSegura, EXTRA, SND, URL_JUEGO: 'https://juanfeliperico369-stack.github.io/unonexus/' };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
 })();
 
@@ -2469,11 +2622,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   }
   U.VISTAS.logros = () => {
     const t = tengo(), n = LOGROS.filter(x => t[x[0]]).length;
-    return '<div class="pag">' + U.franja('Logros', n + ' de ' + LOGROS.length) + '<div class="cuerpo"><h2 class="tit">TUS <span class="rojo">LOGROS</span></h2>' +
-      '<p class="ital">Metas para presumir. No desbloquean nada: en Nexus Caos todo está disponible desde el principio.</p><div class="logros">' +
+    return '<div class="pag">' + U.barra('Logros', n + ' / ' + LOGROS.length) + '<div class="cuerpo"><div class="logros">' +
       LOGROS.map(L => '<div class="logro' + (t[L[0]] ? ' si' : '') + '">' + A.alq(L[3]) + '<div><b>' + esc(L[1]) + '</b><span>' + esc(L[2]) + '</span>' +
         (t[L[0]] ? '<small>' + esc(String(t[L[0]]).slice(0, 10)) + '</small>' : '') + '</div></div>').join('') +
-      '</div><button class="btn" data-a="inicio">Volver</button></div></div>';
+      '</div></div></div>';
   };
   U.ACC.logros = () => U.ir('logros');
   U.on('finPartida', d => {
@@ -2573,14 +2725,13 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
     const guard = LS.get('partida', null), enCurso = guard && guard.reto === r.fecha && !r.resultado;
     const fin = new Date(); fin.setHours(24, 0, 0, 0);
     const faltan = Math.max(0, fin - new Date()), hh = Math.floor(faltan / 3600000), mm = Math.floor(faltan % 3600000 / 60000);
-    let h = '<div class="pag">' + U.franja('Reto del día', '#' + r.num) + '<div class="cuerpo"><h2 class="tit">RETO DEL <span class="rojo">DÍA</span></h2>' +
-      '<p class="ital">Hoy todos juegan con las mismas barajas: tú contra Ígnea, Marea y Céfiro en modo clásico. Llega a 10 antes que nadie y comparte tu resultado.</p>' +
+    let h = '<div class="pag">' + U.barra('Reto del día', '#' + r.num) + '<div class="cuerpo"><p class="lead">Las mismas barajas para todos hoy: tú contra Ígnea, Marea y Céfiro, modo clásico.</p>' +
       '<div class="pelicula">Reto #' + r.num + ' · ' + r.fecha + ' · racha ' + racha + ' día' + (racha === 1 ? '' : 's') + ' · mejor ' + (R.mejor || 0) + '</div>';
     if (r.resultado) h += '<h3 class="tit">Tu resultado</h3>' + resultadoHTML(r) + '<p class="maq">Próximo reto en ' + hh + ' h ' + mm + ' min</p><button class="btn" data-a="retoPractica">Practicar <small>no cuenta</small></button>';
     else if (enCurso) h += '<button class="btn ms" data-a="continuar">Continuar reto</button>';
-    else h += '<button class="btn ms" data-a="retoJugar">Jugar el reto</button><p class="nota">Cuenta el primer juego que termines hoy.</p>';
-    h += '<p class="nota">🟩 ganaste · 🌀 ganaste con Caos · 🟨 sin cambio · 🟥 perdiste puntos · ⬛ Caos de un rival · 💀 quedaste fuera</p>';
-    return h + '<button class="btn" data-a="inicio">Volver</button></div></div>';
+    else h += '<button class="btn ms" data-a="retoJugar">Jugar el reto</button>';
+    h += '<p class="maq">🟩 ganaste · 🌀 con Caos · 🟨 igual · 🟥 perdiste · ⬛ Caos rival · 💀 fuera</p>';
+    return h + '</div></div>';
   };
   U.EXTRA.campeon = v => {
     const G = U.G, r = estado();
@@ -2617,11 +2768,10 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
   }
   U.VISTAS.anotador = () => {
     const T = leer();
-    let h = '<div class="pag">' + U.franja('Anotador', 'Cartas físicas') + '<div class="cuerpo"><h2 class="tit">LA HOJA DE <span class="rojo">PUNTAJES</span></h2>';
+    let h = '<div class="pag">' + U.barra('Anotador', 'cartas físicas') + '<div class="cuerpo">';
     if (!T) {
       const MD = M.MODOS[NUEVO.modo];
-      h += '<p class="ital">¿Juegan con las cartas de verdad? Anota aquí cada partida: el juego calcula los puntos, quién queda fuera, quién reparte y quién inicia.</p>' +
-        '<span class="campo">Modo</span>' + [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos']].map(([k, n]) => '<button class="chip' + (NUEVO.modo === k ? ' on' : '') + '" data-a="anModo" data-v="' + k + '">' + n + '</button>').join('') +
+      h += '<span class="campo">Modo</span>' + [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos']].map(([k, n]) => '<button class="chip' + (NUEVO.modo === k ? ' on' : '') + '" data-a="anModo" data-v="' + k + '">' + n + '</button>').join('') +
         (NUEVO.modo === 'clasico' ? '<span class="campo">Castigo con Caos</span>' + [['cartas', 'Según cartas'], ['fijo', '−3 a todos']].map(([k, n]) => '<button class="chip' + (NUEVO.castigo === k ? ' on' : '') + '" data-a="anCastigo" data-v="' + k + '">' + n + '</button>').join('') : '') +
         '<span class="campo">Jugadores (' + NUEVO.nombres.length + ' de 2–' + MD.max + ')</span>' +
         NUEVO.nombres.map((n, i) => '<div class="asiento" style="grid-template-columns:1fr auto"><input data-c="anNombre" data-i="' + i + '" value="' + esc(n) + '" maxlength="16" aria-label="Nombre">' +
@@ -2646,7 +2796,7 @@ video.cam{width:100%;max-height:50vh;background:#000;border:2px solid #000}
       }
       h += '<div class="fila-btn"><button class="btn" data-a="anReiniciar">Nuevo juego</button><button class="btn" data-a="anOtros">Otros jugadores</button></div>';
     }
-    return h + '<button class="btn" data-a="inicio">Volver</button></div></div>';
+    return h + '</div></div>';
   };
   function formHTML() {
     const T = leer(), MD = M.MODOS[T.modo], act = T.jug.map((j, i) => i).filter(i => !T.jug[i].fuera);
