@@ -6,7 +6,7 @@ const path = require('path');
 const URL = 'file://' + path.join(__dirname, '..', 'index.html');
 const fallos = [];
 const ok = (c, m) => { if (!c) { fallos.push(m); console.log('  ✗', m); } else console.log('  ✓', m); };
-const AJ = () => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, auto: false })); } catch (e) {} };
+const AJ = () => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, auto: false, toqueRapido: true })); } catch (e) {} };
 async function jugar(p, max) {
   for (let k = 0; k < max; k++) {
     const r = await p.evaluate(() => {
@@ -91,6 +91,26 @@ async function jugar(p, max) {
   ok(T.jug.map(j => j.puntos).join() === '2,-1,-2' && !T.jug[2].fuera, 'Deshacer la última partida');
   ok(await p.evaluate(() => document.documentElement.scrollWidth) <= 360, 'Anotador sin desbordamiento');
   await p.click('[data-a="inicio"]');
+  console.log('Lanzar en dos toques');
+  await p.evaluate(() => { window.NexusUI.AJ.toqueRapido = false; window.NexusUI.ACC.rapida(); });
+  let probado = false;
+  for (let k = 0; k < 60 && !probado; k++) {
+    const est = await p.evaluate(() => {
+      const ok = document.querySelector('.mano .c.ok');
+      if (ok) { const n = document.querySelectorAll('.mano .c').length; ok.click(); return { n, sel: !!document.querySelector('.mano .c.sel'), n1: document.querySelectorAll('.mano .c').length }; }
+      const r = document.querySelector('[data-a="robar"]') || document.querySelector('[data-a="pasar"]'); if (r) r.click();
+      return null;
+    });
+    if (est) {
+      ok(est.sel && est.n1 === est.n, '1.er toque elige la carta y muestra su efecto, sin lanzarla');
+      await p.click('.mano .c.sel');
+      const n2 = await p.evaluate(() => window.NexusUI.vistaActual().mano.length);
+      ok(n2 === est.n - 1, '2.º toque la lanza (' + est.n + ' → ' + n2 + ' cartas)');
+      probado = true;
+    } else await p.waitForTimeout(250);
+  }
+  ok(probado, 'Se probó el lanzamiento en dos toques');
+  await p.evaluate(() => window.NexusUI.ACC.salir());
   console.log('Logros');
   await p.click('[data-a="logros"]');
   const n = await p.evaluate(() => document.querySelectorAll('.logro.si').length);

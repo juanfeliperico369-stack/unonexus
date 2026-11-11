@@ -56,13 +56,14 @@
   function grupoColor(id, color, ancho) {
     return '<g fill="none" stroke="' + color + '" stroke-width="' + ancho + '" stroke-linecap="round" stroke-linejoin="round">' + TRAZO[id] + '</g>';
   }
-  function marco(fondo, borde) {
+  function marco(fondo, borde, tinte) {
     return '<rect x="1.5" y="1.5" width="137" height="197" rx="11" fill="' + fondo + '" stroke="#000" stroke-width="3"/>' +
+      (tinte ? '<rect x="3" y="3" width="134" height="194" rx="10" fill="url(#nx-t-' + tinte + ')"/>' : '') +
       '<rect x="7" y="7" width="126" height="186" rx="8" fill="none" stroke="' + borde + '" stroke-width="1.2" opacity=".7"/>';
   }
   function frente(e) {
     const c = COLOR[e];
-    let s = marco('#3D3939', c);
+    let s = marco('#3D3939', c, e);
     if (e === 'caos') {
       s += '<g opacity=".55" fill="#fff">' + [[20, 30], [112, 22], [30, 170], [116, 160], [70, 24], [24, 100], [118, 96], [64, 178]].map(p => '<circle cx="' + p[0] + '" cy="' + p[1] + '" r="1.3"/>').join('') + '</g>';
       s += '<g transform="translate(22 46) scale(.96)">' + grupo('caos_s', '#fff', 3.2) + hoyos() + '</g>';
@@ -120,7 +121,11 @@
     if (instalado || typeof document === 'undefined') return;
     instalado = true;
     const ns = 'http://www.w3.org/2000/svg';
-    let defs = '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath><clipPath id="nx-clip-logo"><circle cx="50" cy="50" r="42"/></clipPath>';
+    // Brillo suave del color del elemento en el centro y viñeta oscura en los bordes (frente "universal" #3D3939)
+    let defs = ['fuego', 'agua', 'tierra', 'aire', 'caos'].map(e => '<radialGradient id="nx-t-' + e + '" cx="50%" cy="42%" r="68%">' +
+      '<stop offset="0" stop-color="' + COLOR[e] + '" stop-opacity="' + (e === 'caos' ? '.16' : '.24') + '"/><stop offset=".55" stop-color="' + COLOR[e] + '" stop-opacity=".05"/>' +
+      '<stop offset="1" stop-color="#000" stop-opacity=".42"/></radialGradient>').join('');
+    defs += '<clipPath id="nx-clip"><rect x="7" y="7" width="126" height="186" rx="8"/></clipPath><clipPath id="nx-clip-logo"><circle cx="50" cy="50" r="42"/></clipPath>';
     ['fuego', 'agua', 'tierra', 'aire'].forEach(e => { defs += '<symbol id="nx-a-' + e + '" viewBox="0 0 100 100"><g fill="none" stroke="' + COLOR[e] + '" stroke-width="9" stroke-linejoin="round" stroke-linecap="round">' + ALQ[e] + '</g></symbol>'; });
     defs += '<symbol id="nx-a-tao" viewBox="0 0 100 100">' + TAO + '</symbol>';
     ['fuego', 'agua', 'tierra', 'aire', 'caos'].forEach(e => { defs += '<symbol id="nx-c-' + e + '" viewBox="0 0 140 200">' + frente(e) + '</symbol>'; });

@@ -12,7 +12,7 @@ async function pagina(b, nombre, errores) {
   const p = await ctx.newPage();
   p.on('pageerror', e => errores.push(nombre + ' pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errores.push(nombre + ' console: ' + m.text()); });
-  await p.addInitScript(n => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, nombre: n })); } catch (e) {} }, nombre);
+  await p.addInitScript(n => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, nombre: n, toqueRapido: true })); } catch (e) {} }, nombre);
   await p.goto(URL);
   return p;
 }

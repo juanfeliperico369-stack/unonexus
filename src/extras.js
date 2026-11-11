@@ -77,11 +77,10 @@
   }
   U.VISTAS.logros = () => {
     const t = tengo(), n = LOGROS.filter(x => t[x[0]]).length;
-    return '<div class="pag">' + U.franja('Logros', n + ' de ' + LOGROS.length) + '<div class="cuerpo"><h2 class="tit">TUS <span class="rojo">LOGROS</span></h2>' +
-      '<p class="ital">Metas para presumir. No desbloquean nada: en Nexus Caos todo está disponible desde el principio.</p><div class="logros">' +
+    return '<div class="pag">' + U.barra('Logros', n + ' / ' + LOGROS.length) + '<div class="cuerpo"><div class="logros">' +
       LOGROS.map(L => '<div class="logro' + (t[L[0]] ? ' si' : '') + '">' + A.alq(L[3]) + '<div><b>' + esc(L[1]) + '</b><span>' + esc(L[2]) + '</span>' +
         (t[L[0]] ? '<small>' + esc(String(t[L[0]]).slice(0, 10)) + '</small>' : '') + '</div></div>').join('') +
-      '</div><button class="btn" data-a="inicio">Volver</button></div></div>';
+      '</div></div></div>';
   };
   U.ACC.logros = () => U.ir('logros');
   U.on('finPartida', d => {
@@ -181,14 +180,13 @@
     const guard = LS.get('partida', null), enCurso = guard && guard.reto === r.fecha && !r.resultado;
     const fin = new Date(); fin.setHours(24, 0, 0, 0);
     const faltan = Math.max(0, fin - new Date()), hh = Math.floor(faltan / 3600000), mm = Math.floor(faltan % 3600000 / 60000);
-    let h = '<div class="pag">' + U.franja('Reto del día', '#' + r.num) + '<div class="cuerpo"><h2 class="tit">RETO DEL <span class="rojo">DÍA</span></h2>' +
-      '<p class="ital">Hoy todos juegan con las mismas barajas: tú contra Ígnea, Marea y Céfiro en modo clásico. Llega a 10 antes que nadie y comparte tu resultado.</p>' +
+    let h = '<div class="pag">' + U.barra('Reto del día', '#' + r.num) + '<div class="cuerpo"><p class="lead">Las mismas barajas para todos hoy: tú contra Ígnea, Marea y Céfiro, modo clásico.</p>' +
       '<div class="pelicula">Reto #' + r.num + ' · ' + r.fecha + ' · racha ' + racha + ' día' + (racha === 1 ? '' : 's') + ' · mejor ' + (R.mejor || 0) + '</div>';
     if (r.resultado) h += '<h3 class="tit">Tu resultado</h3>' + resultadoHTML(r) + '<p class="maq">Próximo reto en ' + hh + ' h ' + mm + ' min</p><button class="btn" data-a="retoPractica">Practicar <small>no cuenta</small></button>';
     else if (enCurso) h += '<button class="btn ms" data-a="continuar">Continuar reto</button>';
-    else h += '<button class="btn ms" data-a="retoJugar">Jugar el reto</button><p class="nota">Cuenta el primer juego que termines hoy.</p>';
-    h += '<p class="nota">🟩 ganaste · 🌀 ganaste con Caos · 🟨 sin cambio · 🟥 perdiste puntos · ⬛ Caos de un rival · 💀 quedaste fuera</p>';
-    return h + '<button class="btn" data-a="inicio">Volver</button></div></div>';
+    else h += '<button class="btn ms" data-a="retoJugar">Jugar el reto</button>';
+    h += '<p class="maq">🟩 ganaste · 🌀 con Caos · 🟨 igual · 🟥 perdiste · ⬛ Caos rival · 💀 fuera</p>';
+    return h + '</div></div>';
   };
   U.EXTRA.campeon = v => {
     const G = U.G, r = estado();
@@ -225,11 +223,10 @@
   }
   U.VISTAS.anotador = () => {
     const T = leer();
-    let h = '<div class="pag">' + U.franja('Anotador', 'Cartas físicas') + '<div class="cuerpo"><h2 class="tit">LA HOJA DE <span class="rojo">PUNTAJES</span></h2>';
+    let h = '<div class="pag">' + U.barra('Anotador', 'cartas físicas') + '<div class="cuerpo">';
     if (!T) {
       const MD = M.MODOS[NUEVO.modo];
-      h += '<p class="ital">¿Juegan con las cartas de verdad? Anota aquí cada partida: el juego calcula los puntos, quién queda fuera, quién reparte y quién inicia.</p>' +
-        '<span class="campo">Modo</span>' + [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos']].map(([k, n]) => '<button class="chip' + (NUEVO.modo === k ? ' on' : '') + '" data-a="anModo" data-v="' + k + '">' + n + '</button>').join('') +
+      h += '<span class="campo">Modo</span>' + [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos']].map(([k, n]) => '<button class="chip' + (NUEVO.modo === k ? ' on' : '') + '" data-a="anModo" data-v="' + k + '">' + n + '</button>').join('') +
         (NUEVO.modo === 'clasico' ? '<span class="campo">Castigo con Caos</span>' + [['cartas', 'Según cartas'], ['fijo', '−3 a todos']].map(([k, n]) => '<button class="chip' + (NUEVO.castigo === k ? ' on' : '') + '" data-a="anCastigo" data-v="' + k + '">' + n + '</button>').join('') : '') +
         '<span class="campo">Jugadores (' + NUEVO.nombres.length + ' de 2–' + MD.max + ')</span>' +
         NUEVO.nombres.map((n, i) => '<div class="asiento" style="grid-template-columns:1fr auto"><input data-c="anNombre" data-i="' + i + '" value="' + esc(n) + '" maxlength="16" aria-label="Nombre">' +
@@ -254,7 +251,7 @@
       }
       h += '<div class="fila-btn"><button class="btn" data-a="anReiniciar">Nuevo juego</button><button class="btn" data-a="anOtros">Otros jugadores</button></div>';
     }
-    return h + '<button class="btn" data-a="inicio">Volver</button></div></div>';
+    return h + '</div></div>';
   };
   function formHTML() {
     const T = leer(), MD = M.MODOS[T.modo], act = T.jug.map((j, i) => i).filter(i => !T.jug[i].fuera);

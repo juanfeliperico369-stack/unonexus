@@ -136,7 +136,8 @@
         // Regla de la casa (NO está en el documento): si todos pasan y el turno vuelve a quien puso la carta
         // de la mesa, se saca una carta nueva del mazo. Por defecto solo en Combos (sin ella nadie gana en Combos).
         mesaLimpia: cfg.mesaLimpia != null ? !!cfg.mesaLimpia : true, // si todos pasan y vuelve a quien puso la carta: sale carta nueva
-        caos: modo === 'solitario' ? cfg.caos !== false : M.caos
+        // Cartas Caos: el Clásico y el Solitario permiten elegir jugar con ellas o sin ellas; Familiar y Combos no las usan.
+        caos: (modo === 'solitario' || modo === 'clasico') ? cfg.caos !== false : M.caos
       },
       rs: (cfg.semilla >>> 0) || ((Math.random() * 4294967296) >>> 0),
       jug, np: 0, inicia: -1, campeon: -1, terminado: false, p: null,
@@ -237,6 +238,11 @@
 
   // Aplica una acción. Devuelve {ok, ev} o {ok:false, error}. Nunca lanza por acciones inválidas.
   function aplicar(J, a, quien) {
+    const r = aplicarBase(J, a, quien);
+    if (r.ok) { const n = rebarajar(J); if (n) r.ev.rebarajado = n; }
+    return r;
+  }
+  function aplicarBase(J, a, quien) {
     const err = esValida(J, a, quien);
     if (err) return { ok: false, error: err };
     const p = J.p, i = p.turno, j = J.jug[i];
@@ -245,7 +251,7 @@
     if (a.t === 'jugar') {
       const top = cima(p), cartas = a.ids.map(id => j.mano.find(c => c.id === id));
       const jg = formarJugada(J, cartas);
-      jg.ids = a.ids.slice(); jg.por = i; jg.verbo = verbo(jg, top);
+      jg.ids = a.ids.slice(); jg.es = cartas.map(c => c.e); jg.por = i; jg.verbo = verbo(jg, top);
       j.mano = j.mano.filter(c => a.ids.indexOf(c.id) < 0);
       p.mesa.push(jg); p.quietos = 0;
       if (J.modo === 'solitario') p.puestasJ++;
@@ -270,7 +276,8 @@
     else {
       avanzar(J);
       const top = cima(p);
-      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && top.por === p.turno && p.mazo.length) {
+      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && top.por === p.turno && !p.mazo.length) ev.rebarajado = rebarajar(J);
+      if (J.cfg.mesaLimpia && J.modo !== 'solitario' && cima(p).por === p.turno && p.mazo.length) {
         p.mesa.push(voltearInicial(J, p.mazo)); p.quietos = 0; ev.limpia = cima(p).e;
       }
     }
@@ -300,6 +307,19 @@
     return { ok: true, ev: { t: 'apartar', p: 1, carta: { id: c.id, e: c.e }, sobre: top } };
   }
 
+  // Mazo vacío (decisión del creador): se barajan las cartas jugadas en la mesa, menos la de arriba, y forman un mazo nuevo.
+  function rebarajar(J) {
+    const p = J.p;
+    if (J.modo === 'solitario' || p.fase === 'fin' || p.mazo.length || p.mesa.length < 2) return 0;
+    const top = p.mesa.pop(), cartas = [];
+    p.mesa.forEach(m => (m.ids || []).forEach((id, k) => {
+      const e = (m.es && m.es[k]) || (m.k === 'caos' ? 'caos' : m.k === 'combo' ? COMBOS[m.c].e[k] : m.e);
+      cartas.push({ id, e });
+    }));
+    p.mazo = barajar(J, cartas);
+    p.mesa = [top];
+    return cartas.length;
+  }
   function avanzar(J) { const p = J.p; p.turno = siguiente(J, p.turno); p.fase = 'turno'; p.robo = 0; }
 
   // Castigo por cartas en mano al terminar (sin Caos). Ver tabla en docs/GUIA.md.
@@ -360,6 +380,7 @@
     // Inicia la próxima: el ganador (mantiene su racha). Sin ganador: el siguiente de quien inició.
     if (!J.terminado) J.inicia = (g >= 0 && !J.jug[g].fuera) ? g : siguiente(J, J.inicia);
     const delta = R.delta, fuera = R.fuera, reparte = R.reparte;
+    J.reparte = reparte; // el que más perdió reparte la siguiente (regla Extra 1)
     p.fin = { tipo, ganador: g, delta, manos, cartas, fuera, reparte, mesaN: p.mesa.length, racha: r.n };
   }
 
@@ -372,7 +393,8 @@
       mano: (yo >= 0 && J.jug[yo]) ? J.jug[yo].mano.map(c => ({ id: c.id, e: c.e })) : [],
       mesa: p.mesa.slice(-8).map(m => JSON.parse(JSON.stringify(m))),
       mazo: p.mazo.length, mesaN: p.mesa.length, racha: J.racha || { j: -1, n: 0 }, turno: p.turno, fase: p.fase, robo: p.robo, quietos: p.quietos,
-      rival: R ? { mazo: R.mazo.length, puestas: R.puestas, apartadas: R.apartadas.length } : null,
+      rival: R ? { mazo: R.mazo.length, puestas: R.puestas, apartadas: R.apartadas.length, ultApartada: R.apartadas.length ? R.apartadas[R.apartadas.length - 1].e : null } : null,
+      reparte: J.reparte == null ? -1 : J.reparte,
       puestasJ: p.puestasJ,
       fin: p.fin ? JSON.parse(JSON.stringify(p.fin)) : null,
       terminado: J.terminado, campeon: J.campeon, inicia: J.inicia,

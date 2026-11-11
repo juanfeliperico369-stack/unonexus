@@ -159,3 +159,12 @@ Ver `docs/SUGERENCIAS.md` (juego, reglas del libro físico, lanzamiento, anuncio
 - Jugabilidad medida (bots Normal): Clásico con 2–8 jugadores → 0 % de cierres (antes ≈ 8 %), 6–7 partidas por juego, siempre hay campeón. El Caos decide 35–58 % de las partidas (al robar más, circulan más cartas). Combos: 16 % de cierres con 3 jugadores; con 6 jugadores, 88 % (el mazo de 11 se agota). Pendiente: preguntar si en Combos se rebaraja el descarte cuando se acaba el mazo.
 - IA: Normal roba 2 si tiene 1 carta, si no 1; Difícil simula robar 1 o 2.
 - Interfaz: mano de muchas cartas en dos filas; textos de reglas, pistas y tutorial actualizados; tabla de puntos con 4 o más cartas.
+
+## 17. v2.0.0 — Peso, realismo y diseño limpio (2026-11-11)
+- **Caos (decisión del creador: "tal cual el documento")**: se lanza en cualquier turno. El motor reparte la Caos exactamente según la matemática (4 jugadores: 44 % medido frente al 43 % teórico de que alguien empiece con una). Nuevo: el Clásico permite **jugar con o sin las 2 cartas Caos** (`cfg.caos`, como el documento ya permitía en Solitario); Familiar y Combos no las usan. Medido con bots Normal: con Caos ≈ 9,5 jugadas por partida; sin Caos ≈ 18.
+- **Mazo vacío (decisión del creador)**: se barajan las cartas jugadas en la mesa, menos la de arriba (`rebarajar()` en el motor, evento `ev.rebarajado`). Las jugadas guardan `es` (elementos por id) para reconstruir las cartas. Combos con 6 jugadores ya no se traba, pero es largo (≈ 300 jugadas por partida): es propio de su tabla.
+- **Realismo**: reparto animado carta por carta desde el mazo (el que reparte: `J.reparte`), volteo de la primera carta, pila de la mesa con las últimas 5 jugadas giradas, los robos de los rivales viajan a su lugar, bots con tiempo de pensar variable, lanzar en **dos toques** (el 1.º muestra el efecto: "AGUA apaga FUEGO"; Ajustes → "Lanzar con un solo toque"), siguiente partida automática apagada por defecto.
+- **Modos**: Solitario con panel propio (mazo rival, 3 casillas, apartadas); Combos con botón ⁂ (tabla de combos) y vista previa del combo elegido.
+- **Diseño**: se quitó el contenido de "revista" (edición, páginas, frases, notas); quedan sus estilos y colores. Barra superior con "volver" en cada pantalla. Cartas con brillo del color del elemento y viñeta.
+- IA Difícil con presupuesto según jugadores/modo (decisión máx. ≈ 70 ms en Combos con 6).
+- Pruebas: `simular` (36 casos), `ui`, `extras` (incluye los dos toques), `lan`, `bt`, `pwa`.

@@ -47,10 +47,9 @@ body{margin:0;background:transparent}.i{position:absolute;left:0;top:0;display:g
     d.style.cssText += ';width:1200px;height:630px;background:#efe9d6;display:block';
     const carta = (e, x, y, r) => '<div style="position:absolute;left:' + x + 'px;top:' + y + 'px;width:210px;height:300px;transform:rotate(' + r + 'deg);filter:drop-shadow(10px 12px 0 rgba(0,0,0,.35))"><svg viewBox="0 0 140 200" width="210" height="300">' + A.frente(e) + '</svg></div>';
     d.innerHTML =
-      '<div style="position:absolute;left:0;right:0;top:0;height:56px;background:#164a64;color:#efe9d6;font:700 22px Maquina,monospace;letter-spacing:.3em;display:flex;align-items:center;padding-left:40px">NEXUS CAOS · EDICIÓN Nº 1</div>' +
+      '<div style="position:absolute;left:0;right:0;top:0;height:56px;background:#164a64;color:#efe9d6;font:700 22px Maquina,monospace;letter-spacing:.3em;display:flex;align-items:center;padding-left:40px">NEXUS CAOS · CARTAS ELEMENTALES</div>' +
       '<div style="position:absolute;left:46px;top:80px;font:700 214px/0.8 Titulos,Impact,sans-serif;color:#164a64">NEXUS<br><span style="color:#c42222">CAOS</span></div>' +
       '<div style="position:absolute;left:50px;top:440px;font:700 46px Titulos,Impact,sans-serif;color:#164a64">SOLO UN VERDADERO GANADOR</div>' +
-      '<div style="position:absolute;left:50px;top:498px;font:italic 400 30px Revista,Georgia,serif;color:#1c1a17">Piedra, papel o tijera a nivel elemental y cósmico</div>' +
       '<svg style="position:absolute;left:820px;top:70px" width="300" height="300" viewBox="0 0 100 100">' + A.logoSVG() + '</svg>' +
       carta('fuego', 702, 268, -11) + carta('agua', 838, 246, 2) + carta('caos', 968, 272, 12) +
       '<div style="position:absolute;left:0;right:0;bottom:0;height:62px;background:#000;color:#e8c96a;font:700 21px Maquina,monospace;letter-spacing:.12em;display:flex;align-items:center;justify-content:center;white-space:nowrap">4 ELEMENTOS · 50 CARTAS · 2 A 12 JUGADORES · OFFLINE · ONEZERO</div>';

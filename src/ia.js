@@ -67,7 +67,11 @@
     return K;
   }
   function valorFinal(K, i, antes) {
-    const f = K.p.fin; if (!f) return 0;
+    const f = K.p.fin;
+    if (!f) { // partida sin terminar en la simulación: estimar por cartas en mano frente al promedio rival
+      const otros = K.jug.filter((j, k) => k !== i && !j.fuera), media = otros.reduce((s, j) => s + j.mano.length, 0) / Math.max(1, otros.length);
+      return (media - K.jug[i].mano.length) * 0.5;
+    }
     return (K.jug[i].puntos - antes) + (f.ganador === i ? 1 : 0);
   }
   function prng(seed) {
@@ -77,13 +81,17 @@
   // Números aleatorios comunes: cada iteración usa la MISMA mano simulada y la misma semilla para todas las opciones.
   function elegirMC(J, cands, r, iter) {
     const i = J.p.turno, antes = J.jug[i].puntos, suma = cands.map(() => 0);
+    // Presupuesto según la mesa: menos simulaciones con muchos jugadores o en Combos (partidas largas) → rápido en celulares modestos.
+    const act = J.jug.filter(j => !j.fuera).length;
+    iter = Math.max(6, Math.round(iter * Math.min(1, 4 / act) * (M.MODOS[J.modo].combos ? 0.5 : 1)));
+    const tope = M.MODOS[J.modo].combos ? 90 : 160;
     for (let it = 0; it < iter; it++) {
       const base = JSON.stringify(simulada(J, i, r)), sem = (r() * 4294967296) >>> 0;
       for (let c = 0; c < cands.length; c++) {
         const K = JSON.parse(base), rr = prng(sem);
         M.aplicar(K, cands[c]);
         let pasos = 0;
-        while (K.p.fase !== 'fin' && pasos++ < 400) { const a = elegir(K, rr); if (!a || !M.aplicar(K, a).ok) break; }
+        while (K.p.fase !== 'fin' && pasos++ < tope) { const a = elegir(K, rr); if (!a || !M.aplicar(K, a).ok) break; }
         suma[c] += valorFinal(K, i, antes);
       }
     }

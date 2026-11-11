@@ -67,3 +67,10 @@ Formato: fecha · etapa · qué cambió · qué se probó · qué falta.
 - Error de interpretación: con 3 cartas se pasaba. En realidad, cerrado = tomas 1 o 2 aunque tengas 3 (sin tope; Combos tope 9), y si una carta te sirve debes jugarla. Si todos pasan: sale carta nueva (todos los modos). Caos según cartas: −1/−2/−3 como máximo.
 - Bot de pruebas actualizado (casos de robo y oráculo de castigos). Simulación: 600 juegos OK; cierres en Clásico 0 % (antes ≈ 8 %).
 - Pruebas UI, LAN, Bluetooth simulado y extras: OK. Publicado en gh-pages (v1.4.0) y APK 1.4.0 con la misma llave.
+
+## 2026-11-11 · v2.0.0: peso, realismo y diseño limpio
+- La Caos no estaba sesgada: la frecuencia es la matemática (43 % con 4 jugadores). El creador decidió dejarla tal cual el documento; se agregó jugar sin Caos en Clásico.
+- Mazo vacío → se rebaraja la mesa (decisión del creador).
+- Reparto animado, volteo, pila realista, robos visibles, ritmo de bots, lanzar en dos toques, avance automático apagado.
+- Solitario y Combos con interfaz propia. Diseño sin contenido de revista.
+- Pruebas: reglas 36 casos + 300 juegos, UI, extras, LAN, Bluetooth simulado: OK.

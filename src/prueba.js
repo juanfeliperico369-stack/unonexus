@@ -111,6 +111,14 @@
     ok(J.p.rival.mazo.length === 22 && M.verificar(J).length === 0, 'Solitario con Caos: mazo rival de 22');
     J = M.crearJuego({ modo: 'solitario', jugadores: [{ nombre: 'T', tipo: 'humano' }], semilla: 3, caos: false });
     ok(J.p.rival.mazo.length === 21, 'Solitario sin Caos: mazo rival de 21');
+    // Mazo vacío: se rebaraja la mesa (menos la de arriba)
+    J = escenario('clasico', [['agua', 'agua'], ['fuego']], 'tierra', ['agua']);
+    J.p.mesa = [{ k: 'carta', e: 'fuego', ids: [90], por: -1 }, { k: 'carta', e: 'agua', ids: [91], es: ['agua'], por: 1 }, { k: 'carta', e: 'aire', ids: [92], es: ['aire'], por: 1 }];
+    const rr = M.aplicar(J, { t: 'robar', n: 1 });
+    ok(rr.ok && rr.ev.rebarajado === 2 && J.p.mazo.length === 2 && J.p.mesa.length === 1 && J.p.mesa[0].e === 'aire', 'Mazo vacío: se rebaraja la mesa menos la carta de arriba');
+    // Clásico sin cartas Caos (opción del documento)
+    J = M.crearJuego({ modo: 'clasico', jugadores: [{ tipo: 'bot' }, { tipo: 'bot' }], semilla: 5, caos: false });
+    ok(J.cfg.caos === false && M.verificar(J).length === 0 && !J.p.mazo.concat(J.jug[0].mano, J.jug[1].mano).some(c => c.e === 'caos'), 'Clásico sin cartas Caos: mazo de 48');
     // Acción inválida no altera el estado
     J = escenario('clasico', [['agua', 'tierra', 'fuego'], ['fuego']], 'aire', ['tierra']);
     const antes = JSON.stringify(J);

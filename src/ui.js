@@ -10,7 +10,7 @@
     set(k, v) { try { localStorage.setItem('nexus.' + k, JSON.stringify(v)); } catch (e) {} },
     del(k) { try { localStorage.removeItem('nexus.' + k); } catch (e) {} }
   };
-  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false, auto: true }, LS.get('ajustes', {}));
+  const AJ = Object.assign({ sonido: true, vibrar: true, velocidad: 'normal', reverso: 'baja', quieto: false, nombre: 'Tú', tutorial: false, auto: false, toqueRapido: false }, LS.get('ajustes', {}));
   const ST = Object.assign({ partidas: 0, ganadas: 0, coronas: 0, caos: 0, soloG: 0, soloP: 0 }, LS.get('stats', {}));
   const guardaAJ = () => { LS.set('ajustes', AJ); SND.activo = AJ.sonido; SND.vibrar = AJ.vibrar; document.body.classList.toggle('quieto', !!AJ.quieto); };
   const guardaST = () => LS.set('stats', ST);
@@ -19,7 +19,7 @@
   const NIVEL = ['', 'Fácil', 'Normal', 'Difícil'];
   const DEMORA = { lenta: 1250, normal: 760, rapida: 380 };
   const ELEM = M.ELEM;
-  const VERSION = '1.4';
+  const VERSION = '2.0';
   // Ganchos para src/extras.js (reto del día, anotador, logros, personalidades)
   const HOOKS = {};
   const on = (e, f) => { (HOOKS[e] = HOOKS[e] || []).push(f); };
@@ -54,6 +54,10 @@
   }
   function cerrarCapa() { const c = $('#capa'); if (c) c.remove(); if (window.QRScan) window.QRScan.parar(); }
   function franja(izq, der) { return '<div class="franja"><span>' + izq + '</span><span class="der">' + der + '</span></div>'; }
+  // Barra superior de cada pantalla: volver + título (sin adornos de revista)
+  function barra(titulo, extra) {
+    return '<div class="barra"><button class="atras" data-a="' + (pantalla === 'lan' ? 'lanSalir' : 'inicio') + '" aria-label="Volver">‹</button><span class="bt">' + titulo + '</span>' + (extra ? '<span class="bx">' + extra + '</span>' : '') + '</div>';
+  }
   function ir(p) { pantalla = p; cerrarCapa(); pintar(); window.scrollTo(0, 0); }
   function pintar() {
     const app = $('#app');
@@ -88,33 +92,26 @@
   const VISTAS = {};
   VISTAS.inicio = () => {
     const hay = !!LS.get('partida', null);
-    return '<div class="pag portada">' + franja('Nexus Caos · Edición Nº 1', 'Cartas elementales') +
-      '<div class="cuerpo"><div class="cabeza"><h1>NEXUS<b>CAOS</b></h1>' + A.logo() + '</div>' +
-      A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p><p class="ital">Piedra, papel o tijera a nivel elemental y cósmico: Fuego, Tierra, Agua y Aire en un caos del azar. ¿Serás el rey de reyes?</p>' +
-      '<div class="pelicula">4 elementos · 50 cartas · 2 a 12 jugadores · gana quien llegue a 10 · −5 queda fuera</div>' +
-      (hay ? '<button class="btn ms" data-a="continuar">Continuar partida <small>guardada</small></button>' : '') +
+    return '<div class="pag portada"><div class="cuerpo"><div class="hero">' + A.logo() + '<h1>NEXUS<b>CAOS</b></h1>' + A.alqs() + '<p class="lema">SOLO UN VERDADERO GANADOR</p></div>' +
+      (hay ? '<button class="btn ms" data-a="continuar">Continuar partida</button>' : '') +
       '<button class="btn rj" data-a="rapida">Jugar ya <small>tú + 3 bots</small></button>' + EXTRA.inicio1() +
       '<button class="btn pt" data-a="nueva">Nueva partida <small>modos y jugadores</small></button>' +
-      '<button class="btn ng" data-a="lan">Modo LAN <small>Wi-Fi sin internet</small></button>' +
+      '<button class="btn ng" data-a="lan">Multijugador <small>Wi-Fi · Bluetooth</small></button>' +
       EXTRA.inicio2() + '<div class="fila-btn"><button class="btn" data-a="reglas">Reglas</button><button class="btn" data-a="ajustes">Ajustes</button></div>' +
-      '<p class="maq" style="margin-top:14px">Récord · ' + ST.ganadas + ' partidas ganadas · ' + ST.coronas + ' coronas · ' + ST.caos + ' caos</p>' +
-      '<div class="sep" aria-hidden="true">' + ['fuego', 'agua', 'aire', 'tierra', 'tao'].map(e => A.alq(e)).join('') + '</div>' +
-      '<p class="nota creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p>' +
-      '</div><span class="pagnum">PAG 01</span></div>';
+      '<p class="maq record">★ ' + ST.ganadas + ' partidas · ♛ ' + ST.coronas + ' coronas · ☯ ' + ST.caos + ' caos</p>' +
+      '<p class="creditos">Un juego de <b>OneZero</b> por <b>Infinite Tree</b></p></div></div>';
   };
-
   VISTAS.nueva = () => {
     const MD = M.MODOS[NP.modo];
     ajustarAsientos();
     const modos = [['clasico', 'Clásico'], ['familiar', 'Familiar'], ['combos', 'Combos'], ['solitario', 'Solitario']];
     const desc = {
-      clasico: '3 cartas, con Caos. Gana +2 (Caos +5). Llega a 10 y eres campeón; en −5 quedas descalificado.',
-      familiar: 'Para niños: sin Caos, nadie queda fuera, el marcador no baja de 0 y solo pierde 1 quien quede con 3 cartas.',
-      combos: '2 a 6 jugadores, 6 cartas (tope 9), sin Caos. Combina dos elementos: Lodo, Vendaval, Tormenta, Fogata máxima, Oxígeno maligno y Evaporación masiva.',
-      solitario: TEXTO_SOLO
+      clasico: 'El original: 3 cartas, ganar +2 (con Caos +5). A 10 eres campeón; en −5 quedas fuera.',
+      familiar: 'Sin Caos, nadie queda fuera y el marcador no baja de 0.',
+      combos: '2 a 6 jugadores, 6 cartas, tope 9. Combina dos elementos en una jugada.',
+      solitario: 'Tú contra el mazo: gana quien ponga primero 3 cartas.'
     };
-    let h = '<div class="pag">' + franja('Nueva partida', 'PAG 02') + '<div class="cuerpo">' +
-      '<h2 class="tit">ELIGE TU <span class="rojo">CAOS</span></h2><span class="campo">Modo</span>' +
+    let h = '<div class="pag">' + barra('Nueva partida') + '<div class="cuerpo"><span class="campo">Modo</span>' +
       modos.map(([k, n]) => '<button class="chip' + (NP.modo === k ? ' on' : '') + '" data-a="modo" data-v="' + k + '">' + n + '</button>').join('') +
       '<p class="nota">' + desc[NP.modo] + '</p>';
     if (NP.modo !== 'solitario') {
@@ -124,19 +121,20 @@
         '<select data-c="nivel" data-i="' + i + '" aria-label="Nivel"' + (s.tipo === 'bot' ? '' : ' disabled') + '>' + [1, 2, 3].map(n => '<option value="' + n + '"' + (s.nivel === n ? ' selected' : '') + '>' + NIVEL[n] + '</option>').join('') + '</select>' +
         '<button class="mini-btn" data-a="quitar" data-i="' + i + '" aria-label="Quitar"' + (NP.asientos.length <= MD.min ? ' disabled' : '') + '>✕</button></div>').join('');
       h += '<div class="fila-btn"><button class="btn" data-a="mas" data-v="bot"' + (NP.asientos.length >= MD.max ? ' disabled' : '') + '>+ Bot</button><button class="btn" data-a="mas" data-v="humano"' + (NP.asientos.length >= MD.max ? ' disabled' : '') + '>+ Humano</button></div>';
-      h += '<p class="nota">Varios humanos en un mismo dispositivo: se pasan el celular en cada turno.</p>';
       h += '<span class="campo">Dirección</span>' + [[1, 'Izq → Der'], [-1, 'Der → Izq'], [0, 'Al azar']].map(([v, n]) => '<button class="chip' + (NP.dir === v ? ' on' : '') + '" data-a="dir" data-v="' + v + '">' + n + '</button>').join('');
-      if (NP.modo === 'clasico') h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
-        [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('') +
-        '<p class="nota">El documento trae las dos versiones (reglas y sinopsis). Quien tenga la otra Caos se salva.</p>';
+      if (NP.modo === 'clasico') {
+        h += '<label class="tg">Con las 2 cartas Caos<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>';
+        if (NP.caos) h += '<span class="campo">Castigo cuando ganan con Caos</span>' +
+          [['cartas', 'Según cartas (−1/−2/−3)'], ['fijo', '−3 a todos']].map(([v, n]) => '<button class="chip' + (NP.castigoCaos === v ? ' on' : '') + '" data-a="castigo" data-v="' + v + '">' + n + '</button>').join('');
+      }
       const ml = NP.mesaLimpia == null ? true : NP.mesaLimpia;
-      h += '<label class="tg">Mesa limpia<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
-        '<p class="nota">Si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo y esa persona debe sobreponerse a ella. Activada por defecto.</p>';
+      h += '<label class="tg">Si todos pasan, sale carta nueva<input type="checkbox" data-c="mesaLimpia"' + (ml ? ' checked' : '') + '></label>' +
+''; 
     } else {
-      h += '<label class="tg">Jugar con las 2 cartas Caos (25/25)<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
+      h += '<label class="tg">Con las 2 cartas Caos<input type="checkbox" data-c="caos"' + (NP.caos ? ' checked' : '') + '></label>' +
         '<p class="maq">Récord solitario · tú ' + ST.soloG + ' — mazo ' + ST.soloP + '</p>';
     }
-    h += '<button class="btn rj" data-a="empezar">Empezar <small>' + MD.n + '</small></button><button class="btn" data-a="inicio">Volver</button></div></div>';
+    h += '<button class="btn rj" data-a="empezar">Empezar <small>' + MD.n + '</small></button></div></div>';
     return h;
   };
   function ajustarAsientos() {
@@ -150,11 +148,11 @@
     return { nombre: NOMBRES_BOT.find(n => usados.indexOf(n) < 0) || ('Bot ' + (NP.asientos.length + 1)), tipo: 'bot', nivel: 2 };
   }
 
-  VISTAS.reglas = () => '<div class="pag">' + franja('Reglas del caos', 'PAG 03') + '<div class="cuerpo">' +
+  VISTAS.reglas = () => '<div class="pag">' + barra('Reglas') + '<div class="cuerpo">' +
     '<h2 class="tit">CÓMO SE <span class="rojo">JUEGA</span></h2>' +
-    '<p class="ital">Gana la partida quien se quede sin cartas antes que cualquier otro. Gana el juego quien llegue a 10 puntos.</p>' +
-    '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="nota">El mismo elemento no se sobrepone a sí mismo.</p>' +
-    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Solo pasas sin robar si el mazo está vacío</div>' +
+    '<p class="lead">Gana la partida quien se queda sin cartas primero. Gana el juego quien llega a 10 puntos.</p>' +
+    '<h3 class="tit">Quién vence a quién</h3>' + tablaVence() + '<p class="lead">El mismo elemento no vence a sí mismo.</p>' +
+    '<h3 class="tit">Tu turno</h3><div class="pelicula">La partida abre con una carta del mazo · Lanza una carta que se sobreponga a la de la mesa · Se reparten 3 cartas · Si estás cerrado (ninguna te sirve) tomas 1 o 2 cartas del mazo, aunque ya tengas 3 · Si después de robar una carta te sirve, debes jugarla; si no, pasa el turno · Si todos pasan y vuelve a quien puso la carta, sale una carta nueva del mazo · Si se acaba el mazo, se barajan las cartas de la mesa</div>' +
     '<h3 class="tit">Puntos</h3><table class="res"><tr><th>Al terminar</th><th>Normal</th><th>Con Caos</th></tr>' +
     '<tr><td>Ganador (0 cartas)</td><td class="d mas">+2</td><td class="d mas">+5</td></tr><tr><td>1 carta</td><td class="d">0</td><td class="d menos">−1*</td></tr>' +
     '<tr><td>2 cartas</td><td class="d menos">−1</td><td class="d menos">−2*</td></tr><tr><td>3 cartas</td><td class="d menos">−2</td><td class="d menos">−3*</td></tr><tr><td>4 cartas o más</td><td class="d menos">−3, −4…</td><td class="d menos">−3*</td></tr>' +
@@ -165,22 +163,23 @@
     '<b>Combos</b> (2–6): 6 cartas, tope 9; con n cartas al final pierdes n (1 carta no pierde).</p><p><b>Solitario</b>: ' + TEXTO_SOLO + '</p>' +
     '<div class="caja"><b class="fd">COMBOS</b><br>' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(v => M.COMBOS[v] ? M.COMBOS[v].n : M.NOMBRE[v]).join(', ')).join('<br>') + '<br><i>Mesa limpia: si todos pasan y el turno vuelve a quien puso la carta, sale una nueva del mazo.</i></div>' +
     '<h3 class="tit">Extras</h3><p>El ganador tira primero la siguiente partida para mantener su racha; el que pierde reparte. Las partidas ganadas se cuentan para presumir.</p>' +
-    '<button class="btn" data-a="inicio">Volver</button></div><span class="pagnum">PAG 03</span></div>';
+    '</div></div>';
 
-  VISTAS.ajustes = () => '<div class="pag">' + franja('Ajustes', 'PAG 04') + '<div class="cuerpo"><h2 class="tit">AJUSTES</h2>' +
+  VISTAS.ajustes = () => '<div class="pag">' + barra('Ajustes') + '<div class="cuerpo">' +
     '<span class="campo">Tu nombre</span><div class="asiento" style="grid-template-columns:1fr"><input data-c="minombre" value="' + esc(AJ.nombre) + '" maxlength="16"></div>' +
     '<label class="tg">Sonido<input type="checkbox" data-c="sonido"' + (AJ.sonido ? ' checked' : '') + '></label>' +
     '<label class="tg">Vibración<input type="checkbox" data-c="vibrar"' + (AJ.vibrar ? ' checked' : '') + '></label>' +
     '<label class="tg">Reducir animaciones<input type="checkbox" data-c="quieto"' + (AJ.quieto ? ' checked' : '') + '></label>' +
     '<label class="tg">Siguiente partida automática<input type="checkbox" data-c="auto"' + (AJ.auto ? ' checked' : '') + '></label>' +
+    '<label class="tg">Lanzar con un solo toque<input type="checkbox" data-c="toqueRapido"' + (AJ.toqueRapido ? ' checked' : '') + '></label>' +
     '<span class="campo">Velocidad de los bots</span>' + [['lenta', 'Lenta'], ['normal', 'Normal'], ['rapida', 'Rápida']].map(([v, n]) => '<button class="chip' + (AJ.velocidad === v ? ' on' : '') + '" data-a="vel" data-v="' + v + '">' + n + '</button>').join('') +
     '<span class="campo">Reverso de las cartas</span><div style="display:flex;gap:10px">' + [['baja', 'Gama baja'], ['media', 'Gama media'], ['alta', 'Gama alta']].map(([v, n]) =>
       '<button class="chip' + (AJ.reverso === v ? ' on' : '') + '" data-a="reverso" data-v="' + v + '" style="flex-direction:column;padding:6px">' + A.reverso(v, '') .replace('class="carta-svg ', 'style="width:56px;height:80px" class="carta-svg ') + n + '</button>').join('') + '</div>' +
-    '<h3 class="tit">Bot de pruebas</h3><p class="nota">Simula partidas en este dispositivo y revisa reglas, puntajes y pantallas buscando errores.</p>' +
+    '<h3 class="tit">Bot de pruebas</h3>' +
     '<button class="btn ms" data-a="autoprueba">Ejecutar bot de pruebas</button>' +
-    '<h3 class="tit">Tus datos</h3><p class="nota">Todo se guarda solo en este dispositivo: tu partida, récord, historial y ajustes son tuyos. Exporta para guardar una copia o pasarla a otro dispositivo.</p>' + historialHTML() +
+    '<h3 class="tit">Tus datos</h3>' + historialHTML() +
     '<div class="fila-btn"><button class="btn" data-a="exportar">Exportar</button><button class="btn" data-a="importar">Importar</button></div><input type="file" id="archivo" accept=".json,application/json" class="oculto">' +
-    '<button class="btn" data-a="borrar">Borrar datos guardados</button><button class="btn" data-a="inicio">Volver</button>' +
+    '<button class="btn" data-a="borrar">Borrar datos guardados</button>' +
     '<p class="maq" style="margin-top:12px">Edición ' + (EDICION === 'pago' ? 'completa' : 'normal') + ' · v' + VERSION + ' · OneZero por Infinite Tree</p></div></div>';
 
   function historialHTML() {
@@ -196,7 +195,7 @@
     if (G) clearTimeout(G.timer);
     const J = M.crearJuego(cfg);
     const locales = []; J.jug.forEach((j, i) => { if (j.tipo === 'humano') locales.push(i); });
-    G = Object.assign({ J, locales, viendo: locales.length ? locales[0] : 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: red || null, contado: 0, cfg, mapaRed: {} }, extra || {});
+    G = Object.assign({ J, locales, viendo: locales.length ? locales[0] : 0, cubierto: false, ultimo: null, sel: [], timer: 0, red: red || null, contado: 0, cfg, mapaRed: {}, ritualPend: true }, extra || {});
     G.cubierto = locales.length > 1 && J.jug[J.p.turno].tipo === 'humano';
     if (G.cubierto) G.viendo = J.p.turno;
     pantalla = 'mesa';
@@ -210,7 +209,57 @@
       '<button class="btn rj" data-a="cerrar">¡A jugar!</button></div>');
   }
   function vistaActual() { return G.J ? M.vista(G.J, G.viendo) : G.vista; }
-  function demora() { return DEMORA[AJ.velocidad] || 760; }
+  function demora() { return Math.round((DEMORA[AJ.velocidad] || 760) * (0.8 + Math.random() * 0.6)); }
+  // ---------- realismo: vuelos de cartas, reparto y volteo de la primera carta ----------
+  function volar(desde, hacia, html, retraso, dur) {
+    const d = document.createElement('div');
+    d.className = 'vuelo'; d.innerHTML = html;
+    d.style.cssText = 'left:' + desde.left + 'px;top:' + desde.top + 'px;width:' + desde.width + 'px;height:' + desde.height + 'px';
+    document.body.appendChild(d);
+    const k = hacia.width / desde.width, dx = hacia.left - desde.left, dy = hacia.top - desde.top;
+    setTimeout(() => { d.style.transition = 'transform ' + dur + 'ms cubic-bezier(.2,.8,.25,1)'; d.style.transform = 'translate(' + dx + 'px,' + dy + 'px) scale(' + k + ')'; }, retraso + 20);
+    setTimeout(() => d.remove(), retraso + dur + 80);
+  }
+  function rectChico(r, base) { const w = base.width * 0.36; return { left: r.left + r.width / 2 - w / 2, top: r.top + r.height / 2 - w * 0.7, width: w }; }
+  // Al empezar cada partida: el que reparte da las cartas una por una y luego voltea la primera carta del mazo.
+  function ritual() {
+    if (!G || !G.ritualPend) return;
+    G.ritualPend = false;
+    const v = vistaActual();
+    if (AJ.quieto || G.cubierto || pantalla !== 'mesa') return;
+    const mz = document.querySelector('.mazo .carta-svg'); if (!mz) return;
+    const o = mz.getBoundingClientRect(); if (!o.width) return;
+    const MD = M.MODOS[v.modo], n = v.jug.length, mias = [...document.querySelectorAll('.mano .c')], destinos = [];
+    if (v.modo === 'solitario') mias.forEach(el => destinos.push({ el }));
+    else {
+      const orden = []; let x = v.inicia >= 0 ? v.inicia : v.turno;
+      for (let k = 0; k < n; k++) { if (!v.jug[x].fuera) orden.push(x); x = (((x + v.dir) % n) + n) % n; }
+      let mia = 0;
+      for (let ronda = 0; ronda < MD.mano; ronda++) orden.forEach(i => {
+        if (i === v.yo) { if (mias[mia]) destinos.push({ el: mias[mia++] }); }
+        else { const el = document.querySelector('[data-j="' + i + '"]'); if (el) destinos.push({ chip: el }); }
+      });
+    }
+    mias.forEach(el => el.classList.add('oculta'));
+    const arriba = document.querySelector('.pila .arriba'); if (arriba) arriba.classList.add('tapada');
+    const paso = Math.max(24, Math.min(90, 1200 / Math.max(1, destinos.length))), dur = 360, rev = A.reverso(AJ.reverso);
+    destinos.forEach((d, k) => {
+      const r = (d.el || d.chip).getBoundingClientRect();
+      volar(o, d.el ? r : rectChico(r, o), rev, k * paso, dur);
+      setTimeout(() => { if (d.el) d.el.classList.remove('oculta'); if (k % 2 === 0) SND.reparte(); }, k * paso + dur);
+    });
+    const total = destinos.length * paso + dur;
+    setTimeout(() => { const t = document.querySelector('.pila .arriba'); if (t) { t.classList.remove('tapada'); t.classList.add('volteo'); } SND.carta(); }, total + 60);
+    G.ritualHasta = Date.now() + total + 520;
+  }
+  // Cuando un rival roba, sus cartas viajan del mazo a su lugar.
+  function vueloRobo(ev, v) {
+    if (AJ.quieto || !ev || ev.t !== 'robar' || ev.p === v.yo) return;
+    const mz = document.querySelector('.mazo .carta-svg') || document.querySelector('.mazo'), chip = document.querySelector('[data-j="' + ev.p + '"]');
+    if (!mz || !chip) return;
+    const o = mz.getBoundingClientRect(), r = chip.getBoundingClientRect(), rev = A.reverso(AJ.reverso);
+    for (let k = 0; k < ev.n; k++) volar(o, rectChico(r, o), rev, k * 120, 340);
+  }
   function guardar() {
     if (!G || !G.J || G.red) return;
     if (G.J.terminado && G.J.p.fase === 'fin') LS.del('partida');
@@ -232,11 +281,13 @@
     const t = J.jug[p.turno];
     if (t.tipo === 'humano') {
       if (G.locales.length > 1 && G.viendo !== p.turno) { G.viendo = p.turno; G.cubierto = true; }
-      pintarMesaSegura();
+      pintarMesaSegura(); ritual();
       if (!G.cubierto) SND.turno();
     } else {
-      pintarMesaSegura();
-      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J, G.rngIA); if (a) hacer(a, p.turno); }, demora());
+      pintarMesaSegura(); ritual();
+      // Ritmo humano: cada bot piensa un tiempo variable (más si tiene varias opciones) y espera a que termine el reparto
+      const extra = M.acciones(J).length > 1 ? 260 : 0, espera = Math.max(0, (G.ritualHasta || 0) - Date.now());
+      if (t.tipo === 'bot' || t.tipo === 'mazo') G.timer = setTimeout(() => { if (!G || G.J !== J) return; const a = IA.elegir(J, G.rngIA); if (a) hacer(a, p.turno); }, demora() + extra + espera);
     }
   }
   function pintarMesaSegura() {
@@ -260,7 +311,7 @@
   // Aplica una acción (local o anfitrión). quien = asiento que actúa.
   function hacer(a, quien, rectOrigen) {
     if (!G || !G.J) return { ok: false };
-    const origen = rectOrigen || rectDe('.rival[data-j="' + quien + '"]') || rectDe('.yo');
+    const origen = rectOrigen || rectDe('[data-j="' + quien + '"]') || rectDe('.yo');
     const r = M.aplicar(G.J, a, quien);
     if (!r.ok) {
       const t = G.J.jug[quien];
@@ -273,6 +324,7 @@
     efectos(r.ev);
     ciclo();
     animar(r.ev, r.ev.t === 'jugar' ? origen : null);
+    vueloRobo(r.ev, vistaActual());
     return r;
   }
   function efectos(ev) {
@@ -332,10 +384,14 @@
 
   // ---------- texto del cartel ----------
   function textoEvento(ev, v) {
+    const t = textoEvento0(ev, v);
+    return ev && ev.rebarajado ? t + ' · <b>SE BARAJA LA MESA</b> (' + ev.rebarajado + ' CARTAS AL MAZO)' : t;
+  }
+  function textoEvento0(ev, v) {
     const n = i => i >= 0 && v.jug[i] ? esc(v.jug[i].nombre).toUpperCase() : 'MESA';
     if (!ev) {
       const top = v.mesa[v.mesa.length - 1];
-      return 'PARTIDA ' + v.np + ' · LA MESA ABRE CON <b>' + nombreJugada(top) + '</b> · INICIA ' + n(v.turno);
+      return 'PARTIDA ' + v.np + (v.reparte >= 0 && v.jug[v.reparte] ? ' · REPARTE ' + n(v.reparte) : '') + ' · LA MESA ABRE CON <b>' + nombreJugada(top) + '</b> · INICIA ' + n(v.turno);
     }
     if (ev.t === 'jugar') {
       const j = ev.jugada;
@@ -368,15 +424,24 @@
         '<div class="nm">' + esc(j.nombre) + '</div>' + (esMazo ? '' : '<div class="pt' + (j.puntos < 0 ? ' neg' : '') + '">' + j.puntos + '</div>') + '<div class="est">' + est + '</div>' +
         (G && G.globos && G.globos[i] && G.globos[i].hasta > Date.now() ? '<span class="globo">' + esc(G.globos[i].t) + '</span>' : '') + '</div>';
     }).join('');
-    // historia (jugadas anteriores)
-    const hist = v.mesa.slice(0, -1).slice(-6).map(m => elemsJugada(m).map(e => A.carta(e)).join('')).join('');
-    // pila
-    const prev = v.mesa.length > 1 ? v.mesa[v.mesa.length - 2] : null;
-    let pila = prev ? A.carta(elemsJugada(prev)[0], 'debajo') : '';
-    const te = elemsJugada(top);
-    pila += te.length === 2 ? A.carta(te[0], 'arriba') + A.carta(te[1], 'combo2') : A.carta(te[0], 'arriba');
+    // pila realista: las últimas jugadas apiladas, cada carta con su propio giro
+    const ult = v.mesa.slice(-5);
+    let pila = '';
+    ult.forEach((m, k) => {
+      const es = elemsJugada(m), id0 = (m.ids && m.ids[0]) || 0, arriba = k === ult.length - 1;
+      const giro = arriba ? ((id0 * 37) % 9) - 4 : ((id0 * 37) % 23) - 11, dx = ((id0 * 13) % 11) - 5, dy = ((id0 * 7) % 9) - 4;
+      pila += '<div class="pc' + (arriba ? ' arriba' : '') + '"><div class="gi" style="transform:translate(' + dx + 'px,' + dy + 'px) rotate(' + giro + 'deg)">' + A.carta(es[0]) + (es.length === 2 ? A.carta(es[1], 'combo2') : '') + '</div></div>';
+    });
     const mazoN = v.mazo, solo = v.modo === 'solitario';
-    const mazo = (mazoN ? Array.from({ length: Math.min(3, mazoN) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">' + (solo ? 'AUXILIAR ' : 'MAZO ') + mazoN + '</span>';
+    const mazo = (mazoN ? Array.from({ length: Math.min(4, Math.ceil(mazoN / 10)) }, () => A.reverso(rev)).join('') : '<div class="vacio"></div>') + '<span class="cnt">' + (solo ? 'AUXILIAR ' : 'MAZO ') + mazoN + '</span>';
+    let zonaRival = rivales;
+    if (solo) { // Solitario: el mazo rival, sus 3 casillas y las cartas apartadas
+      const R = v.rival, cas = k => [0, 1, 2].map(x => '<i class="casilla' + (x < k ? ' on' : '') + '"></i>').join('');
+      zonaRival = '<div class="solo-rival' + (v.turno === 1 && v.fase !== 'fin' ? ' turno' : '') + '" data-j="1">' +
+        '<div class="sr-pila">' + (R.mazo ? A.reverso(rev) : '<div class="vacio"></div>') + '<span class="cnt">RIVAL ' + R.mazo + '</span></div>' +
+        '<div class="sr-info"><b>EL MAZO</b><div class="casillas">' + cas(R.puestas) + '</div></div>' +
+        '<div class="sr-pila">' + (R.ultApartada ? A.carta(R.ultApartada) : '<div class="vacio"></div>') + '<span class="cnt">APARTADAS ' + R.apartadas + '</span></div></div>';
+    }
     // mano
     const jugables = {}, combos = [];
     (v.acciones || []).forEach(a => {
@@ -399,22 +464,26 @@
     else if (miTurno && !cubierta) {
       const robos = v.acciones.filter(a => a.t === 'robar'), pasa = v.acciones.find(a => a.t === 'pasar'), hayJ = v.acciones.some(a => a.t === 'jugar');
       robos.forEach(a => { acc += '<button class="btn ms" data-a="robar" data-n="' + a.n + '">Robar ' + a.n + '</button>'; });
+      const unaSel = !MD.combos && G.sel.length === 1 && v.mano.find(c => c.id === G.sel[0]);
+      if (unaSel) acc += '<button class="btn rj" data-a="lanzar">Lanzar ' + NOM(unaSel.e) + '</button>';
       if (MD.combos && G.sel.length) acc += '<button class="btn rj" data-a="lanzar"' + (seleccionValida(v) ? '' : ' disabled') + '>Lanzar ' + (seleccionValida(v) ? esc(seleccionValida(v)) : '') + '</button>';
       if (pasa) acc += '<button class="btn" data-a="pasar">' + (v.fase === 'robado' ? 'Pasar turno' : 'Pasar') + '</button>';
-      if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
+      if (unaSel) pista = '<b>' + NOM(unaSel.e) + '</b> ' + (unaSel.e === 'caos' ? '— ¡final total! +5' : (M.VENCE[unaSel.e][top.e] || '').toLowerCase() + ' ' + nombreJugada(top)) + ' · toca otra vez para lanzar';
+      else if (MD.combos && G.sel.length && seleccionValida(v)) pista = 'Lanzar <b>' + esc(seleccionValida(v)) + '</b> · vence a ' + nombreJugada(top);
+      else if (v.fase === 'robado') pista = hayJ ? '¡Te sirve! Debes jugar una carta resaltada.' : 'No te sirvió: pasa el turno.';
       else if (hayJ) pista = (v.mano.some(c => c.e === 'caos') ? '¡Tienes CAOS! ' : '') + 'Para vencer a ' + nombreJugada(top) + ': ' + quienVence(top, v.modo).join(', ') + (MD.combos ? '. Toca 1 o 2 cartas y lanza.' : '.');
-      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas.' : '1 carta.');
+      else if (robos.length) pista = 'Estás cerrado: roba ' + (robos.length > 1 ? '1 o 2 cartas (más cartas, más opciones… y más castigo si pierdes).' : '1 carta.');
       else pista = 'Estás cerrado' + (v.mazo ? ' con el tope de cartas' : ' y el mazo está vacío') + ': pasa.';
     } else if (nt) pista = 'Turno de ' + esc(nt.nombre) + '…';
     const yoJ = v.jug[yo] || { nombre: '', puntos: 0, ganadas: 0 };
-    const info = v.modo === 'solitario' ? 'TÚ ' + v.puestasJ + '/3 · MAZO ' + v.rival.puestas + '/3' : yoJ.puntos + ' PTS';
+    const info = v.modo === 'solitario' ? '<span class="casillas">' + [0, 1, 2].map(x => '<i class="casilla' + (x < v.puestasJ ? ' on' : '') + '"></i>').join('') + '</span>' : yoJ.puntos + ' PTS';
     const miRacha = v.racha && v.racha.j === yo && v.racha.n >= 2 ? ' · RACHA ×' + v.racha.n : '';
     const dirTxt = v.dir === 1 ? '↻' : '↺';
     const muchas = v.mano.length > 3;
     return '<div class="mesa">' +
-      '<div class="msup"><button data-a="menuMesa" aria-label="Menú">☰</button><span class="t">PARTIDA ' + v.np + ' · ' + MD.n + (v.modo === 'solitario' ? '' : ' · META 10') + (G && G.red ? ' · LAN' : '') + '</span><span aria-label="Dirección">' + dirTxt + '</span></div>' +
-      '<div class="rivales">' + rivales + '</div>' +
-      '<div class="centro"><div class="historia">' + hist + '</div><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
+      '<div class="msup"><button data-a="menuMesa" aria-label="Menú">☰</button><span class="t">PARTIDA ' + v.np + ' · ' + MD.n + (v.modo === 'solitario' ? '' : ' · META 10') + (G && G.red ? ' · LAN' : '') + '</span>' + (MD.combos ? '<button data-a="verCombos" aria-label="Tabla de combos">⁂</button>' : '') + '<span aria-label="Dirección">' + dirTxt + '</span></div>' +
+      '<div class="rivales' + (solo ? ' solo' : '') + '">' + zonaRival + '</div>' +
+      '<div class="centro"><div class="tablero"><div class="mazo">' + mazo + '</div><div class="pila">' + pila + '<span class="cnt">' + (solo ? 'MESA · ' + v.mesaN + 'ª' : 'MESA') + '</span></div></div>' +
       '<div class="cartel">' + textoEvento(G ? G.ultimo : null, v) + '</div><div class="pista">' + pista + '</div></div>' +
       '<div class="abajo"><div class="yo' + (miTurno ? ' turno' : '') + '"><span>' + esc(yoJ.nombre) + (v.modo === 'solitario' ? '' : ' · ★' + yoJ.ganadas + miRacha) + (miTurno ? ' · TU TURNO' : '') + '</span><span class="pts">' + info + '</span></div>' +
       '<div class="mano' + (muchas ? ' muchas' : '') + (miTurno ? '' : ' espera') + '" style="--n:' + Math.min(v.mano.length, 7) + '">' + mano + '</div>' +
@@ -570,8 +639,7 @@
   VISTAS.lan = () => {
     const R = window.Red, disp = R && R.disponible();
     const bt = R && R.btDisponible();
-    let h = '<div class="pag">' + franja('Multijugador', 'Sin internet') + '<div class="cuerpo"><h2 class="tit">JUGAR EN <span class="rojo">RED LOCAL</span></h2>' +
-      '<p class="ital">Wi-Fi (o el punto de acceso de un celular) o Bluetooth. No necesita internet ni servidor.</p>';
+    let h = '<div class="pag">' + barra('Multijugador', 'sin internet') + '<div class="cuerpo">';
     if (!disp && !bt) return h + '<div class="caja roja">Este navegador no permite conexiones directas (WebRTC). Prueba con Chrome, Edge o Firefox actualizados.</div><button class="btn" data-a="inicio">Volver</button></div></div>';
     if (!SALA) {
       h += '<h3 class="tit">Wi-Fi</h3>' +
@@ -593,7 +661,7 @@
       else if (bt) h += '<button class="btn" data-a="abrirBT">Abrir también por Bluetooth</button>';
       h += '<button class="btn rj" data-a="salaEmpezar"' + (SALA.asientos.length < MD.min ? ' disabled' : '') + '>Empezar</button>';
     } else {
-      h += '<div class="pelicula">' + esc(SALA.estado || 'Conectando…') + '</div><p class="nota">Cuando el anfitrión empiece, la mesa aparecerá sola.</p>';
+      h += '<div class="pelicula">' + esc(SALA.estado || 'Conectando…') + '</div>';
     }
     return h + '<button class="btn" data-a="lanSalir">' + (SALA ? 'Salir de la sala' : 'Volver') + '</button></div></div>';
   };
@@ -647,10 +715,11 @@
           if (o.ev && (!antes || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.fase !== o.v.fase)) disparar('evento', o.ev, o.v);
           const nuevo = !antes || antes.np !== o.v.np || JSON.stringify(antes.mesa) !== JSON.stringify(o.v.mesa) || antes.turno !== o.v.turno || antes.fase !== o.v.fase;
           if (nuevo && o.ev && (!antes || antes.fase !== 'fin' || o.v.fase !== 'fin')) efectos(o.ev);
-          const origen = o.ev && o.ev.t === 'jugar' ? (o.ev.p === o.v.yo ? G.rectPend : rectDe('.rival[data-j="' + o.ev.p + '"]')) : null;
-          if (antes && antes.np !== o.v.np) cerrarCapa();
+          const origen = o.ev && o.ev.t === 'jugar' ? (o.ev.p === o.v.yo ? G.rectPend : rectDe('[data-j="' + o.ev.p + '"]')) : null;
+          if (!antes || antes.np !== o.v.np) { cerrarCapa(); G.ritualPend = true; }
           pintarMesaSegura();
-          if (nuevo) animar(o.ev, origen);
+          ritual();
+          if (nuevo) { animar(o.ev, origen); vueloRobo(o.ev, o.v); }
           if (o.v.turno === o.v.yo && o.v.fase !== 'fin' && nuevo) SND.turno();
           if (o.v.fase === 'fin' && (!antes || antes.fase !== 'fin' || antes.np !== o.v.np)) {
             setTimeout(mostrarFin, 1000);
@@ -726,6 +795,7 @@
       }
       const ok = v.acciones.some(a => a.t === 'jugar' && a.ids.length === 1 && (v.mano.find(x => x.id === a.ids[0]) || {}).e === c.e);
       if (!ok) { const top = v.mesa[v.mesa.length - 1]; aviso(NOM(c.e) + ' no vence a ' + nombreJugada(top)); SND.error(); return; }
+      if (!AJ.toqueRapido && G.sel[0] !== id) { G.sel = [id]; SND.toque(); pintarMesaSegura(); return; } // 1.er toque: elegir y ver el efecto
       jugadorActua({ t: 'jugar', ids: [id] }, b.getBoundingClientRect());
     },
     lanzar: () => {
@@ -747,12 +817,13 @@
           return '<tr class="' + (o.j.fuera ? 'fuera' : '') + (o.i === v.turno ? ' gana' : '') + '"><td>' + esc(o.j.nombre) + ' <small>★' + o.j.ganadas + racha + '</small><div class="camino' + (MD.desc ? '' : ' sin-desc') + '"><i style="left:' + pos.toFixed(1) + '%"></i></div></td><td>' + (o.j.fuera ? 'FUERA' : o.j.n) + '</td><td class="tot">' + o.j.puntos + '</td></tr>';
         }).join('') + '</table><p class="nota">' + (MD.desc ? 'Rojo: zona negativa. En −5 quedas fuera; con 10 eres el rey de reyes.' : 'Gana quien llegue a 10.') + '</p><button class="btn" data-a="menuMesa">Volver</button></div>');
     },
+    verCombos: () => capa('<div class="cuerpo"><h2 class="tit">COMBOS</h2><div class="caja">' + Object.keys(M.COMBOS).map(k => '<b>' + M.COMBOS[k].n + '</b> (' + M.COMBOS[k].e.map(x => M.NOMBRE[x]).join(' + ') + ') vence a ' + M.COMBOS[k].vence.map(x => M.COMBOS[x] ? M.COMBOS[x].n : M.NOMBRE[x]).join(', ')).join('<br>') + '</div><p class="lead">Una carta suelta no vence a un combo. Toca 2 cartas para combinarlas.</p><button class="btn" data-a="cerrar">Volver</button></div>'),
     verVence: () => capa('<div class="cuerpo"><h2 class="tit">QUIÉN VENCE</h2>' + tablaVence() + '<button class="btn" data-a="cerrar">Volver</button></div>'),
     pausaAuto: () => { if (G) { clearTimeout(G.auto); G.np0 = -1; } const b = $('#btnSig'); if (b) b.textContent = 'Siguiente partida'; const pz = $('#btnPausa'); if (pz) pz.remove(); },
     siguiente: () => {
       if (!G || !G.J || G.J.p.fase !== 'fin' || G.J.terminado) return;
       clearTimeout(G.auto); G.np0 = -1;
-      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = []; G.jugados = {};
+      cerrarCapa(); M.nuevaPartida(G.J); G.ultimo = null; G.sel = []; G.jugados = {}; G.ritualPend = true;
       SND.robar(); setTimeout(() => SND.robar(), 120);
       if (EDICION === 'normal' && G.J.np % 4 === 0) { try { window.NexusAnuncios.entrePartidas(G.J.np); } catch (e) {} }
       if (G.locales.length > 1 && G.J.jug[G.J.p.turno].tipo === 'humano') { G.viendo = G.J.p.turno; G.cubierto = true; }
@@ -868,9 +939,9 @@
     else if (c === 'tipo') { NP.asientos[i].tipo = t.value; LS.set('config', NP); pintar(); }
     else if (c === 'nivel') { NP.asientos[i].nivel = +t.value; LS.set('config', NP); }
     else if (c === 'mesaLimpia') { NP.mesaLimpia = t.checked; LS.set('config', NP); }
-    else if (c === 'caos') { NP.caos = t.checked; LS.set('config', NP); }
+    else if (c === 'caos') { NP.caos = t.checked; LS.set('config', NP); pintar(); }
     else if (c === 'minombre') { AJ.nombre = t.value.slice(0, 16) || 'Tú'; if (NP.asientos[0] && NP.asientos[0].tipo === 'humano') NP.asientos[0].nombre = AJ.nombre; guardaAJ(); LS.set('config', NP); }
-    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto' || c === 'auto') { AJ[c] = t.checked; guardaAJ(); }
+    else if (c === 'sonido' || c === 'vibrar' || c === 'quieto' || c === 'auto' || c === 'toqueRapido') { AJ[c] = t.checked; guardaAJ(); }
   });
   document.addEventListener('keydown', e => { if (e.key === 'Escape') cerrarCapa(); });
   window.addEventListener('pagehide', guardar);
@@ -890,6 +961,6 @@
     return false;
   };
   window.NexusUI = { ir, iniciar, vistaActual, get G() { return G; }, get pantalla() { return pantalla; }, ACC, autoprueba, VISTAS,
-    LS, AJ, ST, guardaST, capa, cerrarCapa, aviso, esc, pintar, franja, on, disparar, pintarMesaSegura, EXTRA, SND, URL_JUEGO: 'https://juanfeliperico369-stack.github.io/unonexus/' };
+    LS, AJ, ST, guardaST, capa, cerrarCapa, aviso, esc, pintar, franja, barra, on, disparar, pintarMesaSegura, EXTRA, SND, URL_JUEGO: 'https://juanfeliperico369-stack.github.io/unonexus/' };
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', arrancar); else arrancar();
 })();

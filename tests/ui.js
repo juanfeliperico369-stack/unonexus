@@ -42,7 +42,7 @@ async function jugarTurnos(p, max) {
   const errores = [];
   p.on('pageerror', e => errores.push('pageerror: ' + e.message));
   p.on('console', m => { if (m.type() === 'error') errores.push('console: ' + m.text()); });
-  await p.addInitScript(() => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: false, reverso: 'alta' })); } catch (e) {} });
+  await p.addInitScript(() => { try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: false, reverso: 'alta', toqueRapido: true })); } catch (e) {} });
   await p.goto(URL);
   console.log('Inicio');
   ok(await p.isVisible('text=SOLO UN VERDADERO GANADOR'), 'Portada visible');

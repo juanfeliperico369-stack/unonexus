@@ -13,7 +13,7 @@ const SIMULADO = n => {
     abrirSala: () => { window.__bt('abrir'); }, unirse: mac => { window.__bt('unirse', mac); },
     enviar: (id, t) => { window.__bt('enviar', id, t); }, cerrar: id => { window.__bt('cerrar', id); }, salir: () => { window.__bt('salir'); }
   };
-  try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, nombre: n })); } catch (e) {}
+  try { localStorage.setItem('nexus.ajustes', JSON.stringify({ velocidad: 'rapida', quieto: true, sonido: false, tutorial: true, nombre: n, toqueRapido: true })); } catch (e) {}
 };
 (async () => {
   const b = await chromium.launch();

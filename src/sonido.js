@@ -35,6 +35,7 @@
   Object.assign(S, {
     toque() { tono(880, 0.05, 'square', 0.04); },
     carta(e) { chss(0.12, 0.25, 3000); const x = ELEM[e]; if (x) tono(x[0], 0.18, x[1], 0.07, 0.03); vib(15); },
+    reparte() { chss(0.05, 0.12, 3400); },
     robar() { chss(0.09, 0.18, 1800); chss(0.09, 0.14, 2200, 0.08); },
     pasar() { tono(260, 0.12, 'triangle', 0.06, 0, 200); },
     error() { tono(140, 0.18, 'square', 0.06); vib([30, 40, 30]); },

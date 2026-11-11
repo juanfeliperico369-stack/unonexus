@@ -1,6 +1,6 @@
 {
   "name": "nexus-caos",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "private": true,
   "description": "NEXUS CAOS: juego de cartas elementales offline en un solo HTML, con modo LAN",
   "scripts": {
